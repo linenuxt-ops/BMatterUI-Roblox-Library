@@ -1,23 +1,24 @@
-local ZeroUI = {}
-ZeroUI.__index = ZeroUI
+local BlackMatterUI = {}
+BlackMatterUI.__index = BlackMatterUI
 
 local UIS = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 
-function ZeroUI.new(titleText)
-    local self = setmetatable({}, ZeroUI)
+function BlackMatterUI.new(titleText)
+    local self = setmetatable({}, BlackMatterUI)
     
     -- --- VERSION CONTROL ---
-    local MENU_ID = "ZeroUI_Mega_Edition"
-    local VERSION_NUMBER = 7.0 -- Upgraded to Library Version
+    local MENU_ID = "BlackMatterUI_Edition"
+    local VERSION_NUMBER = 7.0 
 
-    if _G.ZeroUIVersion and _G.ZeroUIVersion >= VERSION_NUMBER then
+    -- Prevents multiple instances of the same UI from running
+    if _G.BlackMatterVersion and _G.BlackMatterVersion >= VERSION_NUMBER then
         local old = CoreGui:FindFirstChild(MENU_ID) or Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild(MENU_ID)
         if old then old:Destroy() end
     end
-    _G.ZeroUIVersion = VERSION_NUMBER
+    _G.BlackMatterVersion = VERSION_NUMBER
 
     -- --- UI CONSTRUCTION ---
     self.MainUI = Instance.new("ScreenGui")
@@ -63,7 +64,7 @@ function ZeroUI.new(titleText)
     
     local Title = Instance.new("TextLabel", Sidebar)
     Title.Size, Title.BackgroundTransparency = UDim2.new(1, 0, 0, 65), 1
-    Title.Text, Title.TextColor3, Title.Font, Title.TextSize = titleText or "0UI MEGA", Color3.fromRGB(180, 150, 255), Enum.Font.GothamBold, 20
+    Title.Text, Title.TextColor3, Title.Font, Title.TextSize = titleText or "BLACKMATTER", Color3.fromRGB(180, 150, 255), Enum.Font.GothamBold, 18
 
     self.Nav = Instance.new("Frame", Sidebar)
     self.Nav.Size, self.Nav.Position, self.Nav.BackgroundTransparency = UDim2.new(1, 0, 1, -75), UDim2.new(0, 0, 0, 70), 1
@@ -83,7 +84,7 @@ end
 
 -- --- LIBRARY METHODS ---
 
-function ZeroUI:Notification(title, message)
+function BlackMatterUI:Notification(title, message)
     local ToastFrame = Instance.new("Frame", self.MainUI)
     ToastFrame.Size, ToastFrame.Position = UDim2.new(0, 260, 0, 70), UDim2.new(1, 30, 1, -100)
     ToastFrame.BackgroundColor3, ToastFrame.BackgroundTransparency = Color3.fromRGB(15, 20, 45), 0.1
@@ -115,7 +116,7 @@ function ZeroUI:Notification(title, message)
     end)
 end
 
-function ZeroUI:CreateTab(name)
+function BlackMatterUI:CreateTab(name)
     local TabBtn = Instance.new("TextButton", self.Nav)
     TabBtn.Size = UDim2.new(0, 150, 0, 38)
     TabBtn.BackgroundColor3, TabBtn.BackgroundTransparency = self.Accent.Color, 0.9
@@ -151,7 +152,7 @@ function ZeroUI:CreateTab(name)
     return self.Pages[name]
 end
 
-function ZeroUI:CreateCard(tab, side, title)
+function BlackMatterUI:CreateCard(tab, side, title)
     local parent = (side:lower() == "left") and tab.Left or tab.Right
     local Card = Instance.new("Frame", parent)
     Card.Name = title
@@ -176,7 +177,7 @@ function ZeroUI:CreateCard(tab, side, title)
     return Content
 end
 
-function ZeroUI:CreateButton(parent, text, callback)
+function BlackMatterUI:CreateButton(parent, text, callback)
     local Btn = Instance.new("TextButton", parent)
     Btn.Size, Btn.BackgroundColor3 = UDim2.new(1, 0, 0, 32), Color3.fromRGB(30, 30, 60)
     Btn.Text, Btn.TextColor3, Btn.Font, Btn.TextSize = text, Color3.new(1,1,1), Enum.Font.Gotham, 13
@@ -185,7 +186,7 @@ function ZeroUI:CreateButton(parent, text, callback)
     Btn.MouseButton1Click:Connect(callback)
 end
 
-function ZeroUI:CreateToggle(parent, text, default, callback)
+function BlackMatterUI:CreateToggle(parent, text, default, callback)
     local state = default
     local Container = Instance.new("TextButton", parent)
     Container.Size, Container.BackgroundTransparency, Container.Text = UDim2.new(1, 0, 0, 30), 1, ""
@@ -212,5 +213,4 @@ function ZeroUI:CreateToggle(parent, text, default, callback)
     Update()
 end
 
--- Return the library
-return ZeroUI
+return BlackMatterUI
