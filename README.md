@@ -10,8 +10,8 @@ A high-performance, dark-themed UI library for Roblox cheat developers.
 
 ## How to Use
 ```lua
-local ZeroUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/linenuxt-ops/BMatterUI-Roblox-Library/refs/heads/main/BlackMatterUI.lua"))()
-local Window = ZeroUI.new("ZeroUI Test")
+local BlackMatterUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/linenuxt-ops/BMatterUI-Roblox-Library/refs/heads/main/BlackMatterUI.lua"))()
+local Window = ZeroUI.new("BlackMatterUI Test")
 
 local Tab = Window:CreateTab("General")
 local Card = Window:CreateCard(Tab, "Left", "Settings")
