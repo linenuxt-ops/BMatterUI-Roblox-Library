@@ -9,18 +9,15 @@ local TweenService = game:GetService("TweenService")
 function BlackMatterUI.new(titleText)
     local self = setmetatable({}, BlackMatterUI)
     
-    -- --- VERSION CONTROL ---
     local MENU_ID = "BlackMatterUI_Edition"
-    local VERSION_NUMBER = 7.0 
+    local VERSION_NUMBER = 7.1
 
-    -- Prevents multiple instances of the same UI from running
     if _G.BlackMatterVersion and _G.BlackMatterVersion >= VERSION_NUMBER then
         local old = CoreGui:FindFirstChild(MENU_ID) or Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild(MENU_ID)
         if old then old:Destroy() end
     end
     _G.BlackMatterVersion = VERSION_NUMBER
 
-    -- --- UI CONSTRUCTION ---
     self.MainUI = Instance.new("ScreenGui")
     self.MainUI.Name = MENU_ID
     self.MainUI.ResetOnSpawn = false
@@ -30,8 +27,8 @@ function BlackMatterUI.new(titleText)
     self.PickingColor = false
     self.Pages = {}
     self.ActiveToasts = {}
+    self.FirstTab = nil -- Used to track the first tab created
 
-    -- --- MAIN FRAME ---
     local MainFrame = Instance.new("Frame", self.MainUI)
     MainFrame.Size, MainFrame.Position = UDim2.new(0, 750, 0, 500), UDim2.new(0.5, -375, 0.5, -250)
     MainFrame.BackgroundColor3, MainFrame.BackgroundTransparency = Color3.fromRGB(10, 12, 25), 0.15
@@ -42,22 +39,31 @@ function BlackMatterUI.new(titleText)
     MainStroke.Thickness, MainStroke.Color, MainStroke.Transparency = 1.8, Color3.fromRGB(120, 80, 255), 0.5
     self.Accent = MainStroke
 
-    -- Dragging Logic
-    local dragging, dragStart, startPos
-    MainFrame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 and not self.PickingColor then
-            dragging = true; dragStart = input.Position; startPos = MainFrame.Position
-        end
-    end)
-    UIS.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - dragStart
-            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-    UIS.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
+    -- --- SEARCH BAR IMPLEMENTATION ---
+    local SearchFrame = Instance.new("Frame", MainFrame)
+    SearchFrame.Size, SearchFrame.Position = UDim2.new(1, -210, 0, 35), UDim2.new(0, 195, 0, 15)
+    SearchFrame.BackgroundColor3, SearchFrame.BackgroundTransparency = Color3.fromRGB(30,30,60), 0.5
+    Instance.new("UICorner", SearchFrame).CornerRadius = UDim.new(0, 8)
 
-    -- Sidebar & Search
+    local SearchInput = Instance.new("TextBox", SearchFrame)
+    SearchInput.Size, SearchInput.Position, SearchInput.BackgroundTransparency = UDim2.new(1, -10, 1, 0), UDim2.new(0, 10, 0, 0), 1
+    SearchInput.Text, SearchInput.PlaceholderText, SearchInput.TextColor3 = "", "Search features...", Color3.new(1,1,1)
+    SearchInput.Font, SearchInput.TextSize, SearchInput.TextXAlignment = Enum.Font.Gotham, 13, Enum.TextXAlignment.Left
+
+    SearchInput:GetPropertyChangedSignal("Text"):Connect(function()
+        local query = SearchInput.Text:lower()
+        for _, page in pairs(self.Pages) do
+            for _, col in pairs({page.Left, page.Right}) do
+                for _, card in pairs(col:GetChildren()) do
+                    if card:IsA("Frame") then
+                        card.Visible = (query == "" or card.Name:lower():find(query)) and true or false
+                    end
+                end
+            end
+        end
+    end)
+
+    -- Sidebar
     local Sidebar = Instance.new("Frame", MainFrame)
     Sidebar.Size, Sidebar.BackgroundColor3 = UDim2.new(0, 180, 1, 0), Color3.fromRGB(15, 15, 35)
     Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 12)
@@ -74,46 +80,26 @@ function BlackMatterUI.new(titleText)
     self.Content = Instance.new("Frame", MainFrame)
     self.Content.Size, self.Content.Position, self.Content.BackgroundTransparency = UDim2.new(1, -180, 1, -60), UDim2.new(0, 180, 0, 60), 1
 
-    -- Toggle visibility with Insert
+    -- Dragging Logic
+    local dragging, dragStart, startPos
+    MainFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 and not self.PickingColor then
+            dragging = true; dragStart = input.Position; startPos = MainFrame.Position
+        end
+    end)
+    UIS.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    UIS.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
+
     UIS.InputBegan:Connect(function(input, gp)
         if not gp and input.KeyCode == Enum.KeyCode.Insert then self.MainUI.Enabled = not self.MainUI.Enabled end
     end)
 
     return self
-end
-
--- --- LIBRARY METHODS ---
-
-function BlackMatterUI:Notification(title, message)
-    local ToastFrame = Instance.new("Frame", self.MainUI)
-    ToastFrame.Size, ToastFrame.Position = UDim2.new(0, 260, 0, 70), UDim2.new(1, 30, 1, -100)
-    ToastFrame.BackgroundColor3, ToastFrame.BackgroundTransparency = Color3.fromRGB(15, 20, 45), 0.1
-    Instance.new("UICorner", ToastFrame).CornerRadius = UDim.new(0, 10)
-    Instance.new("UIStroke", ToastFrame).Color = self.Accent.Color
-    
-    local t = Instance.new("TextLabel", ToastFrame)
-    t.Size, t.Position, t.BackgroundTransparency = UDim2.new(1,-20,0,30), UDim2.new(0,15,0,8), 1
-    t.Text, t.TextColor3, t.Font, t.TextSize = title:upper(), Color3.new(1,1,1), Enum.Font.GothamBold, 14
-    t.TextXAlignment = Enum.TextXAlignment.Left
-
-    local m = Instance.new("TextLabel", ToastFrame)
-    m.Size, m.Position, m.BackgroundTransparency = UDim2.new(1,-20,0,30), UDim2.new(0,15,0,32), 1
-    m.Text, m.TextColor3, m.Font, m.TextSize = message, Color3.new(1,1,1), Enum.Font.Gotham, 12
-    m.TextXAlignment = Enum.TextXAlignment.Left
-
-    table.insert(self.ActiveToasts, ToastFrame)
-    local function UpdateToasts()
-        for i, frame in ipairs(self.ActiveToasts) do
-            local targetPos = UDim2.new(1, -290, 1, -100 - ((#self.ActiveToasts - i) * 80))
-            TweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {Position = targetPos}):Play()
-        end
-    end
-    UpdateToasts()
-    task.delay(3.5, function()
-        for i, f in ipairs(self.ActiveToasts) do if f == ToastFrame then table.remove(self.ActiveToasts, i) break end end
-        TweenService:Create(ToastFrame, TweenInfo.new(0.5), {Position = UDim2.new(1, 30, ToastFrame.Position.Y.Scale, ToastFrame.Position.Y.Offset), BackgroundTransparency = 1}):Play()
-        UpdateToasts() task.wait(0.5) ToastFrame:Destroy()
-    end)
 end
 
 function BlackMatterUI:CreateTab(name)
@@ -130,6 +116,7 @@ function BlackMatterUI:CreateTab(name)
         local Scroll = Instance.new("ScrollingFrame", Page)
         Scroll.Size, Scroll.Position, Scroll.BackgroundTransparency = UDim2.new(0.5, -10, 1, -10), pos, 1
         Scroll.CanvasSize, Scroll.ScrollBarThickness = UDim2.new(0,0,0,0), 2
+        Scroll.ScrollBarImageColor3 = self.Accent.Color
         local Layout = Instance.new("UIListLayout", Scroll)
         Layout.Padding, Layout.HorizontalAlignment = UDim.new(0, 15), Enum.HorizontalAlignment.Center
         local Pad = Instance.new("UIPadding", Scroll)
@@ -149,8 +136,18 @@ function BlackMatterUI:CreateTab(name)
     end)
 
     self.Pages[name] = {Frame = Page, Left = Left, Right = Right, Btn = TabBtn}
+
+    -- AUTO-OPEN FIRST TAB LOGIC
+    if self.FirstTab == nil then
+        self.FirstTab = name
+        Page.Visible = true
+        TabBtn.BackgroundTransparency = 0.6
+    end
+
     return self.Pages[name]
 end
+
+-- [The rest of the library methods (CreateCard, CreateButton, etc.) remain the same as previous response]
 
 function BlackMatterUI:CreateCard(tab, side, title)
     local parent = (side:lower() == "left") and tab.Left or tab.Right
@@ -160,17 +157,14 @@ function BlackMatterUI:CreateCard(tab, side, title)
     Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 10)
     local CardStroke = Instance.new("UIStroke", Card)
     CardStroke.Color, CardStroke.Transparency = self.Accent.Color, 0.7
-
     local CardTitle = Instance.new("TextLabel", Card)
     CardTitle.Size, CardTitle.Position, CardTitle.BackgroundTransparency = UDim2.new(1, -20, 0, 30), UDim2.new(0, 15, 0, 5), 1
     CardTitle.Text, CardTitle.TextColor3, CardTitle.Font, CardTitle.TextSize = title:upper(), Color3.new(0.6, 0.6, 0.6), Enum.Font.GothamBold, 11
     CardTitle.TextXAlignment = Enum.TextXAlignment.Left
-
     local Content = Instance.new("Frame", Card)
     Content.Size, Content.Position, Content.BackgroundTransparency = UDim2.new(1, -30, 1, -45), UDim2.new(0, 15, 0, 35), 1
     local Layout = Instance.new("UIListLayout", Content)
     Layout.Padding = UDim.new(0, 12)
-
     Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         Card.Size = UDim2.new(1, -8, 0, Layout.AbsoluteContentSize.Y + 50)
     end)
@@ -194,14 +188,12 @@ function BlackMatterUI:CreateToggle(parent, text, default, callback)
     Label.Size, Label.BackgroundTransparency, Label.Text = UDim2.new(1, -50, 1, 0), 1, text
     Label.TextColor3, Label.Font, Label.TextSize = Color3.new(1,1,1), Enum.Font.Gotham, 13
     Label.TextXAlignment = Enum.TextXAlignment.Left
-
     local Outer = Instance.new("Frame", Container)
     Outer.Size, Outer.Position, Outer.BackgroundColor3 = UDim2.new(0, 38, 0, 20), UDim2.new(1, -40, 0.5, -10), Color3.fromRGB(45, 45, 45)
     Instance.new("UICorner", Outer).CornerRadius = UDim.new(1, 0)
     local Inner = Instance.new("Frame", Outer)
     Inner.Size, Inner.Position = UDim2.new(0, 14, 0, 14), UDim2.new(0, 3, 0.5, -7)
     Instance.new("UICorner", Inner).CornerRadius = UDim.new(1, 0)
-
     local function Update()
         local targetPos = state and UDim2.new(0, 21, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
         local targetCol = state and self.Accent.Color or Color3.fromRGB(45, 45, 45)
