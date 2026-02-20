@@ -10,7 +10,7 @@ function BlackMatterUI.new(titleText)
     local self = setmetatable({}, BlackMatterUI)
     
     local MENU_ID = "BlackMatterUI_Edition"
-    local VERSION_NUMBER = 7.5 -- Updated version
+    local VERSION_NUMBER = 7.6
 
     if _G.BlackMatterVersion and _G.BlackMatterVersion >= VERSION_NUMBER then
         local old = CoreGui:FindFirstChild(MENU_ID) or Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild(MENU_ID)
@@ -37,18 +37,18 @@ function BlackMatterUI.new(titleText)
     MainFrame.BackgroundColor3, MainFrame.BackgroundTransparency = Color3.fromRGB(10, 12, 25), 0.15
     MainFrame.Active = true
     Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
-    self.MainFrame = MainFrame -- Saved for Color Picker Popup parent
+    self.MainFrame = MainFrame 
     
     local MainStroke = Instance.new("UIStroke", MainFrame)
     MainStroke.Thickness, MainStroke.Color, MainStroke.Transparency = 1.8, Color3.fromRGB(120, 80, 255), 0.5
     self.Accent = MainStroke
 
-    -- Search Bar
+    -- Search Bar Logic
     local SearchFrame = Instance.new("Frame", MainFrame)
     SearchFrame.Name = "SearchFrame"
     SearchFrame.Size, SearchFrame.Position = UDim2.new(1, -210, 0, 35), UDim2.new(0, 195, 0, 15)
     SearchFrame.BackgroundColor3, SearchFrame.BackgroundTransparency = Color3.fromRGB(30,30,60), 0.5
-    SearchFrame.ZIndex = 10 -- Ensure it stays above content
+    SearchFrame.ZIndex = 10
     Instance.new("UICorner", SearchFrame).CornerRadius = UDim.new(0, 8)
 
     local SearchInput = Instance.new("TextBox", SearchFrame)
@@ -181,6 +181,74 @@ function BlackMatterUI:CreateCard(tab, side, title)
     return Content
 end
 
+function BlackMatterUI:CreateDropdown(parent, text, list, callback)
+    local selectedOptions = {}
+    local isOpen = false
+    
+    local Container = Instance.new("Frame", parent)
+    Container.Size, Container.BackgroundTransparency = UDim2.new(1, 0, 0, 35), 1
+    local CLayout = Instance.new("UIListLayout", Container)
+    CLayout.SortOrder, CLayout.Padding = Enum.SortOrder.LayoutOrder, UDim.new(0, 5)
+
+    local MainBtn = Instance.new("TextButton", Container)
+    MainBtn.Size, MainBtn.BackgroundColor3, MainBtn.Text = UDim2.new(1, 0, 0, 35), Color3.fromRGB(35, 35, 65), "  " .. text .. " : None"
+    MainBtn.TextColor3, MainBtn.Font, MainBtn.TextSize, MainBtn.TextXAlignment = Color3.new(1,1,1), Enum.Font.Gotham, 13, Enum.TextXAlignment.Left
+    Instance.new("UICorner", MainBtn).CornerRadius = UDim.new(0, 8)
+    
+    local AnimContainer = Instance.new("CanvasGroup", Container)
+    AnimContainer.Size, AnimContainer.BackgroundTransparency, AnimContainer.GroupTransparency = UDim2.new(1, 0, 0, 0), 1, 1
+    
+    local ItemList = Instance.new("Frame", AnimContainer)
+    ItemList.Size, ItemList.BackgroundColor3 = UDim2.new(1, 0, 1, 0), Color3.fromRGB(20, 20, 45)
+    Instance.new("UIListLayout", ItemList)
+    Instance.new("UICorner", ItemList).CornerRadius = UDim.new(0, 8)
+
+    local function UpdateText()
+        if #selectedOptions == 0 then
+            MainBtn.Text = "  " .. text .. " : None"
+        else
+            MainBtn.Text = "  " .. text .. " : [" .. table.concat(selectedOptions, ", ") .. "]"
+        end
+        callback(selectedOptions)
+    end
+
+    local clear = Instance.new("TextButton", ItemList)
+    clear.Size, clear.BackgroundTransparency, clear.Text, clear.TextColor3 = UDim2.new(1, 0, 0, 30), 1, "Clear All", Color3.fromRGB(255, 100, 100)
+    clear.Font, clear.TextSize = Enum.Font.GothamBold, 12
+    clear.MouseButton1Click:Connect(function()
+        table.clear(selectedOptions)
+        for _, child in pairs(ItemList:GetChildren()) do
+            if child:IsA("TextButton") and child ~= clear then child.TextColor3 = Color3.new(0.8, 0.8, 0.8) end
+        end
+        UpdateText()
+    end)
+
+    for _, item in pairs(list) do
+        local itm = Instance.new("TextButton", ItemList)
+        itm.Size, itm.BackgroundTransparency, itm.Text, itm.TextColor3 = UDim2.new(1, 0, 0, 30), 1, item, Color3.new(0.8,0.8,0.8)
+        itm.Font, itm.TextSize = Enum.Font.Gotham, 12
+        itm.MouseButton1Click:Connect(function()
+            local foundIndex = table.find(selectedOptions, item)
+            if foundIndex then
+                table.remove(selectedOptions, foundIndex)
+                itm.TextColor3 = Color3.new(0.8, 0.8, 0.8)
+            else
+                table.insert(selectedOptions, item)
+                itm.TextColor3 = self.Accent.Color
+            end
+            UpdateText()
+        end)
+    end
+
+    MainBtn.MouseButton1Click:Connect(function()
+        isOpen = not isOpen
+        local targetSize = isOpen and UDim2.new(1, 0, 0, (#list + 1) * 32) or UDim2.new(1, 0, 0, 0)
+        TweenService:Create(AnimContainer, TweenInfo.new(0.3), {Size = targetSize, GroupTransparency = isOpen and 0 or 1}):Play()
+    end)
+
+    CLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() Container.Size = UDim2.new(1, 0, 0, CLayout.AbsoluteContentSize.Y) end)
+end
+
 function BlackMatterUI:CreateColorPicker(parent, text, default, callback)
     local h, s, v = default:ToHSV()
     local PickerFrame = Instance.new("Frame", parent)
@@ -202,8 +270,7 @@ function BlackMatterUI:CreateColorPicker(parent, text, default, callback)
     Popup.Name = "ColorPopup"
     Popup.Size, Popup.Visible, Popup.BackgroundColor3, Popup.Active, Popup.ZIndex = UDim2.new(0, 200, 0, 180), false, Color3.fromRGB(30, 30, 30), true, 500
     Instance.new("UICorner", Popup).CornerRadius = UDim.new(0, 10)
-    local PopStroke = Instance.new("UIStroke", Popup)
-    PopStroke.Thickness, PopStroke.Color = 1.5, Color3.fromRGB(80, 80, 80)
+    Instance.new("UIStroke", Popup).Color = Color3.fromRGB(80, 80, 80)
 
     local HueBar = Instance.new("Frame", Popup)
     HueBar.Size, HueBar.Position, HueBar.ZIndex = UDim2.new(0, 15, 0, 150), UDim2.new(0, 10, 0, 15), 501
@@ -252,7 +319,6 @@ function BlackMatterUI:CreateColorPicker(parent, text, default, callback)
         Popup.Position = UDim2.new(0, rx - 210, 0, ry)
         Popup.Visible = not Popup.Visible
     end)
-
     Update()
 end
 
