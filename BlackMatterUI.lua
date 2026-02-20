@@ -10,7 +10,7 @@ function BlackMatterUI.new(titleText)
     local self = setmetatable({}, BlackMatterUI)
     
     local MENU_ID = "BlackMatterUI_Edition"
-    local VERSION_NUMBER = 7.2
+    local VERSION_NUMBER = 7.5 -- Updated version
 
     if _G.BlackMatterVersion and _G.BlackMatterVersion >= VERSION_NUMBER then
         local old = CoreGui:FindFirstChild(MENU_ID) or Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild(MENU_ID)
@@ -37,24 +37,25 @@ function BlackMatterUI.new(titleText)
     MainFrame.BackgroundColor3, MainFrame.BackgroundTransparency = Color3.fromRGB(10, 12, 25), 0.15
     MainFrame.Active = true
     Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
+    self.MainFrame = MainFrame -- Saved for Color Picker Popup parent
     
     local MainStroke = Instance.new("UIStroke", MainFrame)
     MainStroke.Thickness, MainStroke.Color, MainStroke.Transparency = 1.8, Color3.fromRGB(120, 80, 255), 0.5
     self.Accent = MainStroke
 
-    -- --- SEARCH BAR (The Missing Part) ---
+    -- Search Bar
     local SearchFrame = Instance.new("Frame", MainFrame)
     SearchFrame.Name = "SearchFrame"
     SearchFrame.Size, SearchFrame.Position = UDim2.new(1, -210, 0, 35), UDim2.new(0, 195, 0, 15)
     SearchFrame.BackgroundColor3, SearchFrame.BackgroundTransparency = Color3.fromRGB(30,30,60), 0.5
-    SearchFrame.ZIndex = 5
+    SearchFrame.ZIndex = 10 -- Ensure it stays above content
     Instance.new("UICorner", SearchFrame).CornerRadius = UDim.new(0, 8)
 
     local SearchInput = Instance.new("TextBox", SearchFrame)
     SearchInput.Size, SearchInput.Position, SearchInput.BackgroundTransparency = UDim2.new(1, -10, 1, 0), UDim2.new(0, 10, 0, 0), 1
     SearchInput.Text, SearchInput.PlaceholderText, SearchInput.TextColor3 = "", "Search features...", Color3.new(1,1,1)
     SearchInput.Font, SearchInput.TextSize, SearchInput.TextXAlignment = Enum.Font.Gotham, 13, Enum.TextXAlignment.Left
-    SearchInput.ZIndex = 6
+    SearchInput.ZIndex = 11
 
     SearchInput:GetPropertyChangedSignal("Text"):Connect(function()
         local query = SearchInput.Text:lower()
@@ -146,7 +147,6 @@ function BlackMatterUI:CreateTab(name)
 
     self.Pages[name] = {Frame = Page, Left = Left, Right = Right, Btn = TabBtn}
 
-    -- AUTO-OPEN FIX: If this is the first tab, show it immediately
     if not self.FirstTabCreated then
         self.FirstTabCreated = true
         Page.Visible = true
@@ -179,6 +179,81 @@ function BlackMatterUI:CreateCard(tab, side, title)
         Card.Size = UDim2.new(1, -8, 0, Layout.AbsoluteContentSize.Y + 50)
     end)
     return Content
+end
+
+function BlackMatterUI:CreateColorPicker(parent, text, default, callback)
+    local h, s, v = default:ToHSV()
+    local PickerFrame = Instance.new("Frame", parent)
+    PickerFrame.Size, PickerFrame.BackgroundTransparency = UDim2.new(1, 0, 0, 35), 1
+    
+    local Label = Instance.new("TextLabel", PickerFrame)
+    Label.Size, Label.BackgroundTransparency = UDim2.new(1, -45, 1, 0), 1
+    Label.Text, Label.TextColor3, Label.Font, Label.TextSize, Label.TextXAlignment = text, Color3.new(1,1,1), Enum.Font.Gotham, 13, Enum.TextXAlignment.Left
+    
+    local ColorBox = Instance.new("TextButton", PickerFrame)
+    ColorBox.Size, ColorBox.Position = UDim2.new(0, 35, 0, 25), UDim2.new(1, -35, 0.5, -12)
+    ColorBox.BackgroundColor3 = default
+    ColorBox.Text = ""
+    Instance.new("UICorner", ColorBox).CornerRadius = UDim.new(0, 6)
+    local BoxStroke = Instance.new("UIStroke", ColorBox)
+    BoxStroke.Thickness, BoxStroke.Color = 1.5, Color3.new(1,1,1)
+
+    local Popup = Instance.new("Frame", self.MainFrame)
+    Popup.Name = "ColorPopup"
+    Popup.Size, Popup.Visible, Popup.BackgroundColor3, Popup.Active, Popup.ZIndex = UDim2.new(0, 200, 0, 180), false, Color3.fromRGB(30, 30, 30), true, 500
+    Instance.new("UICorner", Popup).CornerRadius = UDim.new(0, 10)
+    local PopStroke = Instance.new("UIStroke", Popup)
+    PopStroke.Thickness, PopStroke.Color = 1.5, Color3.fromRGB(80, 80, 80)
+
+    local HueBar = Instance.new("Frame", Popup)
+    HueBar.Size, HueBar.Position, HueBar.ZIndex = UDim2.new(0, 15, 0, 150), UDim2.new(0, 10, 0, 15), 501
+    local HueGrad = Instance.new("UIGradient", HueBar)
+    HueGrad.Rotation = 90
+    HueGrad.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.new(1,0,0)), ColorSequenceKeypoint.new(0.17, Color3.new(1,1,0)), ColorSequenceKeypoint.new(0.33, Color3.new(0,1,0)), ColorSequenceKeypoint.new(0.5, Color3.new(0,1,1)), ColorSequenceKeypoint.new(0.67, Color3.new(0,0,1)), ColorSequenceKeypoint.new(0.83, Color3.new(1,0,1)), ColorSequenceKeypoint.new(1, Color3.new(1,0,0))})
+    Instance.new("UICorner", HueBar).CornerRadius = UDim.new(0, 4)
+
+    local SV = Instance.new("ImageLabel", Popup)
+    SV.Size, SV.Position, SV.ZIndex, SV.Image, SV.BackgroundColor3 = UDim2.new(0, 150, 0, 150), UDim2.new(0, 35, 0, 15), 501, "rbxassetid://4155801252", Color3.fromHSV(h, 1, 1)
+    Instance.new("UICorner", SV).CornerRadius = UDim.new(0, 4)
+
+    local Cursor = Instance.new("Frame", SV)
+    Cursor.Size, Cursor.AnchorPoint, Cursor.ZIndex, Cursor.BackgroundColor3, Cursor.Position = UDim2.new(0, 8, 0, 8), Vector2.new(0.5, 0.5), 502, Color3.new(1,1,1), UDim2.new(s, 0, 1-v, 0)
+    Instance.new("UICorner", Cursor).CornerRadius = UDim.new(1, 0)
+
+    local function Update()
+        local color = Color3.fromHSV(h, s, v)
+        ColorBox.BackgroundColor3 = color
+        SV.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
+        callback(color)
+    end
+
+    local dH, dSV = false, false
+    HueBar.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dH = true self.PickingColor = true end end)
+    SV.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dSV = true self.PickingColor = true end end)
+    
+    UIS.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            if dH then 
+                h = 1 - math.clamp((input.Position.Y - HueBar.AbsolutePosition.Y) / HueBar.AbsoluteSize.Y, 0, 1) 
+                Update()
+            elseif dSV then 
+                s = math.clamp((input.Position.X - SV.AbsolutePosition.X) / SV.AbsoluteSize.X, 0, 1) 
+                v = 1 - math.clamp((input.Position.Y - SV.AbsolutePosition.Y) / SV.AbsoluteSize.Y, 0, 1) 
+                Cursor.Position = UDim2.new(s, 0, 1-v, 0) 
+                Update() 
+            end
+        end
+    end)
+    
+    UIS.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dH, dSV, self.PickingColor = false, false, false end end)
+
+    ColorBox.MouseButton1Click:Connect(function()
+        local rx, ry = ColorBox.AbsolutePosition.X - self.MainFrame.AbsolutePosition.X, ColorBox.AbsolutePosition.Y - self.MainFrame.AbsolutePosition.Y
+        Popup.Position = UDim2.new(0, rx - 210, 0, ry)
+        Popup.Visible = not Popup.Visible
+    end)
+
+    Update()
 end
 
 function BlackMatterUI:CreateButton(parent, text, callback)
