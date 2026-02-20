@@ -10,12 +10,14 @@ function BlackMatterUI.new(titleText)
     local self = setmetatable({}, BlackMatterUI)
     
     local MENU_ID = "BlackMatterUI_Edition"
-    local VERSION_NUMBER = 7.6
+    local VERSION_NUMBER = 7.7 -- Updated version to trigger cleanup
 
-    if _G.BlackMatterVersion and _G.BlackMatterVersion >= VERSION_NUMBER then
-        local old = CoreGui:FindFirstChild(MENU_ID) or Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild(MENU_ID)
-        if old then old:Destroy() end
+    -- FIXED: Clean up any previous version of the UI before creating a new one
+    local existing = CoreGui:FindFirstChild(MENU_ID) or Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild(MENU_ID)
+    if existing then
+        existing:Destroy()
     end
+    
     _G.BlackMatterVersion = VERSION_NUMBER
 
     -- GUI Root
@@ -109,6 +111,16 @@ function BlackMatterUI.new(titleText)
     end)
 
     return self
+end
+
+-- NEW: Built-in Dialog method to handle your Critical Update requirement
+function BlackMatterUI:ShowCriticalUpdate()
+    local function showDialog(title, content, isVisible)
+        -- This maps to your requirement: onClick={() => showDialog("Critical Update", <p>Please wait...</p>, false)}
+        self:Notification(title, "Please wait...")
+        print("Dialog Triggered: " .. title)
+    end
+    showDialog("Critical Update", nil, false)
 end
 
 function BlackMatterUI:CreateTab(name)
