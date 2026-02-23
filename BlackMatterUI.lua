@@ -10,9 +10,8 @@ function BlackMatterUI.new(titleText)
     local self = setmetatable({}, BlackMatterUI)
     
     local MENU_ID = "BlackMatterUI_Edition"
-    local VERSION_NUMBER = 7.7 -- Updated version to trigger cleanup
+    local VERSION_NUMBER = 7.8 -- Incremented for the resize update
 
-    -- FIXED: Clean up any previous version of the UI before creating a new one
     local existing = CoreGui:FindFirstChild(MENU_ID) or Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild(MENU_ID)
     if existing then
         existing:Destroy()
@@ -20,7 +19,6 @@ function BlackMatterUI.new(titleText)
     
     _G.BlackMatterVersion = VERSION_NUMBER
 
-    -- GUI Root
     self.MainUI = Instance.new("ScreenGui")
     self.MainUI.Name = MENU_ID
     self.MainUI.ResetOnSpawn = false
@@ -45,6 +43,17 @@ function BlackMatterUI.new(titleText)
     MainStroke.Thickness, MainStroke.Color, MainStroke.Transparency = 1.8, Color3.fromRGB(120, 80, 255), 0.5
     self.Accent = MainStroke
 
+    -- RE-SIZE HANDLE (PC & Mobile)
+    local ResizeHandle = Instance.new("TextButton", MainFrame)
+    ResizeHandle.Name = "ResizeHandle"
+    ResizeHandle.Size = UDim2.new(0, 20, 0, 20)
+    ResizeHandle.Position = UDim2.new(1, -20, 1, -20)
+    ResizeHandle.BackgroundTransparency = 1
+    ResizeHandle.Text = "◢"
+    ResizeHandle.TextColor3 = Color3.fromRGB(120, 80, 255)
+    ResizeHandle.TextSize = 15
+    ResizeHandle.ZIndex = 100
+
     -- Search Bar Logic
     local SearchFrame = Instance.new("Frame", MainFrame)
     SearchFrame.Name = "SearchFrame"
@@ -61,45 +70,24 @@ function BlackMatterUI.new(titleText)
 
     SearchInput:GetPropertyChangedSignal("Text"):Connect(function()
         local query = SearchInput.Text:lower()
-        
         for _, page in pairs(self.Pages) do
             for _, col in pairs({page.Left, page.Right}) do
                 for _, card in pairs(col:GetChildren()) do
                     if card:IsA("Frame") then
-                        -- If search is empty, show everything
-                        if query == "" then
-                            card.Visible = true
-                            continue
-                        end
-
+                        if query == "" then card.Visible = true continue end
                         local foundMatch = false
-                        
-                        -- 1. Check the Card Title itself
-                        if card.Name:lower():find(query) then
-                            foundMatch = true
-                        end
-
-                        -- 2. Check all elements inside the card's Content frame
-                        local content = card:FindFirstChild("Frame") -- This is the 'Content' frame from CreateCard
+                        if card.Name:lower():find(query) then foundMatch = true end
+                        local content = card:FindFirstChild("Frame")
                         if content and not foundMatch then
                             for _, element in pairs(content:GetChildren()) do
-                                -- Check Buttons/Toggles (TextButton) or Labels (TextLabel)
                                 if (element:IsA("TextButton") or element:IsA("TextLabel")) then
-                                    if element.Text:lower():find(query) then
-                                        foundMatch = true
-                                        break
-                                    end
-                                -- Check nested labels (like in Toggles or Color Pickers)
+                                    if element.Text:lower():find(query) then foundMatch = true break end
                                 elseif element:IsA("Frame") or element:IsA("CanvasGroup") then
                                     local subLabel = element:FindFirstChildWhichIsA("TextLabel")
-                                    if subLabel and subLabel.Text:lower():find(query) then
-                                        foundMatch = true
-                                        break
-                                    end
+                                    if subLabel and subLabel.Text:lower():find(query) then foundMatch = true break end
                                 end
                             end
                         end
-
                         card.Visible = foundMatch
                     end
                 end
@@ -126,20 +114,54 @@ function BlackMatterUI.new(titleText)
     self.Content.Name = "Content"
     self.Content.Size, self.Content.Position, self.Content.BackgroundTransparency = UDim2.new(1, -180, 1, -60), UDim2.new(0, 180, 0, 60), 1
 
-    -- Dragging Logic
-    local dragging, dragStart, startPos
+    -- DRAGGING & RESIZING LOGIC
+    local dragging, resizing = false, false
+    local dragStart, startPos, startSize
+
+    -- Start Dragging (MainFrame)
     MainFrame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 and not self.PickingColor then
-            dragging = true; dragStart = input.Position; startPos = MainFrame.Position
+        if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and not self.PickingColor then
+            dragging = true
+            dragStart = input.Position
+            startPos = MainFrame.Position
         end
     end)
+
+    -- Start Resizing (Handle)
+    ResizeHandle.InputBegan:Connect(function(input)
+        if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+            resizing = true
+            dragStart = input.Position
+            startSize = MainFrame.Size
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then resizing = false end
+            end)
+        end
+    end)
+
+    -- Global Input Changed
     UIS.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - dragStart
-            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            if dragging then
+                local delta = input.Position - dragStart
+                MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            elseif resizing then
+                local delta = input.Position - dragStart
+                -- Set Minimum limits so the UI doesn't disappear
+                local newX = math.max(450, startSize.X.Offset + delta.X)
+                local newY = math.max(350, startSize.Y.Offset + delta.Y)
+                MainFrame.Size = UDim2.new(0, newX, 0, newY)
+            end
         end
     end)
-    UIS.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
+
+    -- End Inputs
+    UIS.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+            resizing = false
+        end
+    end)
 
     UIS.InputBegan:Connect(function(input, gp)
         if not gp and input.KeyCode == Enum.KeyCode.Insert then self.MainUI.Enabled = not self.MainUI.Enabled end
@@ -151,7 +173,6 @@ end
 -- NEW: Built-in Dialog method to handle your Critical Update requirement
 function BlackMatterUI:ShowCriticalUpdate()
     local function showDialog(title, content, isVisible)
-        -- This maps to your requirement: onClick={() => showDialog("Critical Update", <p>Please wait...</p>, false)}
         self:Notification(title, "Please wait...")
         print("Dialog Triggered: " .. title)
     end
