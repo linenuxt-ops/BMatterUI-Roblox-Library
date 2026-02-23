@@ -61,11 +61,46 @@ function BlackMatterUI.new(titleText)
 
     SearchInput:GetPropertyChangedSignal("Text"):Connect(function()
         local query = SearchInput.Text:lower()
+        
         for _, page in pairs(self.Pages) do
             for _, col in pairs({page.Left, page.Right}) do
                 for _, card in pairs(col:GetChildren()) do
                     if card:IsA("Frame") then
-                        card.Visible = (query == "" or card.Name:lower():find(query)) and true or false
+                        -- If search is empty, show everything
+                        if query == "" then
+                            card.Visible = true
+                            continue
+                        end
+
+                        local foundMatch = false
+                        
+                        -- 1. Check the Card Title itself
+                        if card.Name:lower():find(query) then
+                            foundMatch = true
+                        end
+
+                        -- 2. Check all elements inside the card's Content frame
+                        local content = card:FindFirstChild("Frame") -- This is the 'Content' frame from CreateCard
+                        if content and not foundMatch then
+                            for _, element in pairs(content:GetChildren()) do
+                                -- Check Buttons/Toggles (TextButton) or Labels (TextLabel)
+                                if (element:IsA("TextButton") or element:IsA("TextLabel")) then
+                                    if element.Text:lower():find(query) then
+                                        foundMatch = true
+                                        break
+                                    end
+                                -- Check nested labels (like in Toggles or Color Pickers)
+                                elseif element:IsA("Frame") or element:IsA("CanvasGroup") then
+                                    local subLabel = element:FindFirstChildWhichIsA("TextLabel")
+                                    if subLabel and subLabel.Text:lower():find(query) then
+                                        foundMatch = true
+                                        break
+                                    end
+                                end
+                            end
+                        end
+
+                        card.Visible = foundMatch
                     end
                 end
             end
