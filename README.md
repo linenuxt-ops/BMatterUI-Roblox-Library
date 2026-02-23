@@ -1,31 +1,42 @@
-# Black Matter UI (v1.0)
+# Black Matter UI (v1.1)
 
-A high-performance, dark-themed UI library for Roblox cheat developers.
+A high-performance, dark-themed UI library for Roblox developers designed for speed, aesthetics, and ease of use.
+
+---
+
+## Update Log
+
+### Version 1.1 (Latest)
+* **Search System V2**: Overhauled the search logic. The UI now searches for specific text within buttons, toggles, and dropdowns rather than just filtering the card headers.
+* **Auto-Cleanup**: Added logic to automatically detect and destroy previous versions of the menu if re-executed (prevents UI stacking).
+* **Versioning**: Introduced `_G.BlackMatterVersion` tracking.
+* **Critical Update Support**: Built-in support for mandatory dialog notifications.
+
+---
 
 ## Features
-* **Auto-Layout:** Cards automatically balance between left and right columns.
-* **Smart Search:** Real-time filtering for features.
-* **Modern UI:** Built-in Toast notifications and smooth Tweens.
-* **Customizable:** Change accent colors on the fly.
+* **Auto-Layout**: Cards automatically balance between left and right columns for organized layouts.
+* **Smart Search**: Real-time filtering that deep-scans text inside every component.
+* **Modern UI**: Built-in Toast notifications and smooth `TweenService` animations.
+* **Customizable**: Full control over accent colors and window titles.
+* **Safety**: Designed to run within `CoreGui` with a `PlayerGui` fallback.
 
-## How to Use
+---
+
+## 🛠 How to Use
+
 ```lua
-local BlackMatterUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/linenuxt-ops/BMatterUI-Roblox-Library/refs/heads/main/BlackMatterUI.lua"))()
-local Window = BlackMatterUI.new("BlackMatterUI Test")
+local BlackMatterUI = loadstring(game:HttpGet("[https://raw.githubusercontent.com/linenuxt-ops/BMatterUI-Roblox-Library/refs/heads/main/BlackMatterUI.lua](https://raw.githubusercontent.com/linenuxt-ops/BMatterUI-Roblox-Library/refs/heads/main/BlackMatterUI.lua)"))()
+local Window = BlackMatterUI.new("BLACK MATTER")
 
 local Tab = Window:CreateTab("General")
 local Card = Window:CreateCard(Tab, "Left", "Settings")
 
+-- Creating a button
 Window:CreateButton(Card, "Click Me", function()
-    Window:Notification("Success", "Button was clicked!")
+    Window:Notification("Success", "Action performed successfully!")
 end)
-```
-## Future Plans
-* Improving the UI
-* Adding a key system
-* Adding more components
-* Adding resizable menu
-* Improve Smart Search (Then looking for a card view it will be looking for a text)
-* Adding auto Load/Silent load
-* Adding change key Binde (Right now the menu is only toggleable using insert)
-* Adding support for mobile
+
+-- Critical Update Dialog (Internal Requirement)
+-- Triggered via: onClick={() => showDialog("Critical Update", <p>Please wait...</p>, false)}
+Window:ShowCriticalUpdate()
