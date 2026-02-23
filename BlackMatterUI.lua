@@ -46,14 +46,15 @@ function BlackMatterUI.new(titleText)
 
     -- ROUNDED RESIZE HANDLE (Slice of circle)
     local ResizeHandle = Instance.new("ImageButton", MainFrame)
-    ResizeHandle.Name = "ResizeHandle"
-    ResizeHandle.Size = UDim2.new(0, 30, 0, 30)
-    ResizeHandle.Position = UDim2.new(1, -15, 1, -15) -- Offset so only the top-left quarter of the circle shows
-    ResizeHandle.BackgroundTransparency = 1
-    ResizeHandle.Image = "rbxassetid://6031064368" -- High quality circle
-    ResizeHandle.ImageColor3 = Color3.fromRGB(120, 80, 255)
-    ResizeHandle.ImageTransparency = 0.7
-    ResizeHandle.ZIndex = 100
+ResizeHandle.Name = "ResizeHandle"
+ResizeHandle.Size = UDim2.new(0, 40, 0, 40) -- Bigger hit-box
+-- Center the circle on the bottom-right corner
+ResizeHandle.Position = UDim2.new(1, -20, 1, -20) 
+ResizeHandle.Image = "rbxassetid://12171542332" 
+ResizeHandle.BackgroundTransparency = 1
+ResizeHandle.ImageColor3 = self.Accent.Color -- Matches your UI theme
+ResizeHandle.ImageTransparency = 0.6
+ResizeHandle.ZIndex = 500 -- Ensure it's on top of everything
 
     -- Search Bar Logic
     local SearchFrame = Instance.new("Frame", MainFrame)
