@@ -10,7 +10,7 @@ function BlackMatterUI.new(titleText)
     local self = setmetatable({}, BlackMatterUI)
     
     local MENU_ID = "BlackMatterUI_Edition"
-    local VERSION_NUMBER = 7.8 -- Incremented for the resize update
+    local VERSION_NUMBER = 7.9 -- Incremented for the aesthetic resize update
 
     local existing = CoreGui:FindFirstChild(MENU_ID) or Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild(MENU_ID)
     if existing then
@@ -36,6 +36,7 @@ function BlackMatterUI.new(titleText)
     MainFrame.Size, MainFrame.Position = UDim2.new(0, 750, 0, 500), UDim2.new(0.5, -375, 0.5, -250)
     MainFrame.BackgroundColor3, MainFrame.BackgroundTransparency = Color3.fromRGB(10, 12, 25), 0.15
     MainFrame.Active = true
+    MainFrame.ClipsDescendants = true -- CRITICAL: This makes the circle "slice" look like part of the corner
     Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
     self.MainFrame = MainFrame 
     
@@ -43,15 +44,15 @@ function BlackMatterUI.new(titleText)
     MainStroke.Thickness, MainStroke.Color, MainStroke.Transparency = 1.8, Color3.fromRGB(120, 80, 255), 0.5
     self.Accent = MainStroke
 
-    -- RE-SIZE HANDLE (PC & Mobile)
-    local ResizeHandle = Instance.new("TextButton", MainFrame)
+    -- ROUNDED RESIZE HANDLE (Slice of circle)
+    local ResizeHandle = Instance.new("ImageButton", MainFrame)
     ResizeHandle.Name = "ResizeHandle"
-    ResizeHandle.Size = UDim2.new(0, 20, 0, 20)
-    ResizeHandle.Position = UDim2.new(1, -20, 1, -20)
+    ResizeHandle.Size = UDim2.new(0, 30, 0, 30)
+    ResizeHandle.Position = UDim2.new(1, -15, 1, -15) -- Offset so only the top-left quarter of the circle shows
     ResizeHandle.BackgroundTransparency = 1
-    ResizeHandle.Text = "◢"
-    ResizeHandle.TextColor3 = Color3.fromRGB(120, 80, 255)
-    ResizeHandle.TextSize = 15
+    ResizeHandle.Image = "rbxassetid://6031064368" -- High quality circle
+    ResizeHandle.ImageColor3 = Color3.fromRGB(120, 80, 255)
+    ResizeHandle.ImageTransparency = 0.7
     ResizeHandle.ZIndex = 100
 
     -- Search Bar Logic
@@ -68,6 +69,7 @@ function BlackMatterUI.new(titleText)
     SearchInput.Font, SearchInput.TextSize, SearchInput.TextXAlignment = Enum.Font.Gotham, 13, Enum.TextXAlignment.Left
     SearchInput.ZIndex = 11
 
+    -- [Search Input Logic remains same as your previous code...]
     SearchInput:GetPropertyChangedSignal("Text"):Connect(function()
         local query = SearchInput.Text:lower()
         for _, page in pairs(self.Pages) do
@@ -118,7 +120,6 @@ function BlackMatterUI.new(titleText)
     local dragging, resizing = false, false
     local dragStart, startPos, startSize
 
-    -- Start Dragging (MainFrame)
     MainFrame.InputBegan:Connect(function(input)
         if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and not self.PickingColor then
             dragging = true
@@ -127,7 +128,6 @@ function BlackMatterUI.new(titleText)
         end
     end)
 
-    -- Start Resizing (Handle)
     ResizeHandle.InputBegan:Connect(function(input)
         if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
             resizing = true
@@ -139,7 +139,6 @@ function BlackMatterUI.new(titleText)
         end
     end)
 
-    -- Global Input Changed
     UIS.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
             if dragging then
@@ -147,7 +146,6 @@ function BlackMatterUI.new(titleText)
                 MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
             elseif resizing then
                 local delta = input.Position - dragStart
-                -- Set Minimum limits so the UI doesn't disappear
                 local newX = math.max(450, startSize.X.Offset + delta.X)
                 local newY = math.max(350, startSize.Y.Offset + delta.Y)
                 MainFrame.Size = UDim2.new(0, newX, 0, newY)
@@ -155,7 +153,6 @@ function BlackMatterUI.new(titleText)
         end
     end)
 
-    -- End Inputs
     UIS.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = false
@@ -170,7 +167,6 @@ function BlackMatterUI.new(titleText)
     return self
 end
 
--- NEW: Built-in Dialog method to handle your Critical Update requirement
 function BlackMatterUI:ShowCriticalUpdate()
     local function showDialog(title, content, isVisible)
         self:Notification(title, "Please wait...")
