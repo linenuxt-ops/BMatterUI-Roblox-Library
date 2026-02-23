@@ -40,3 +40,15 @@ end)
 -- Critical Update Dialog (Internal Requirement)
 -- Triggered via: onClick={() => showDialog("Critical Update", <p>Please wait...</p>, false)}
 Window:ShowCriticalUpdate()
+```
+---
+
+ ## Future Plans
+* Improving the UI
+* Adding a key system
+* Adding more components
+* Adding resizable menu
+* ~~Improve Smart Search (Then looking for a card view it will be looking for a text)~~ [DONE]
+* Adding auto Load/Silent load
+* Adding change key Binde (Right now the menu is only toggleable using insert)
+* Adding support for mobile 
