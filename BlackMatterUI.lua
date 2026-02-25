@@ -1,5 +1,5 @@
 local BMLibrary = {
-    Version = 2.0
+    Version = 2.2
 }
 
 local CoreGui = game:GetService("CoreGui")
@@ -40,19 +40,19 @@ function BMLibrary:CreateWindow(title)
     Main.Active = true
     Main.ClipsDescendants = true
 
-    -- [NEW] Visible Resize Indicator (Corner Lines)
+    -- Visible Resize Indicator (The Triangle)
     local ResizeIcon = Instance.new("TextLabel", Main)
     ResizeIcon.Name = "ResizeIcon"
     ResizeIcon.BackgroundTransparency = 1
     ResizeIcon.Position = UDim2.new(1, -15, 1, -15)
     ResizeIcon.Size = UDim2.new(0, 15, 0, 15)
     ResizeIcon.Font = Enum.Font.GothamBold
-    ResizeIcon.Text = "◢" -- Modern corner triangle indicator
+    ResizeIcon.Text = "◢" 
     ResizeIcon.TextColor3 = Color3.fromRGB(80, 40, 110)
     ResizeIcon.TextSize = 16
     ResizeIcon.ZIndex = 5
 
-    -- LARGER Resize Handle (Bottom Right)
+    -- Large Resize Handle (Hitbox)
     local ResizeHandle = Instance.new("TextButton", Main)
     ResizeHandle.Name = "ResizeHandle"
     ResizeHandle.Size = UDim2.new(0, 30, 0, 30)
@@ -104,20 +104,21 @@ function BMLibrary:CreateWindow(title)
         Sidebar.CanvasSize = UDim2.new(0, 0, 0, SidebarLayout.AbsoluteContentSize.Y)
     end)
 
-    -- Pages
+    -- Pages Container
     local PageFolder = Instance.new("Frame", Main)
     PageFolder.Name = "Pages"
     PageFolder.Position = UDim2.new(0, 130, 0, 45)
     PageFolder.Size = UDim2.new(1, -140, 1, -55)
     PageFolder.BackgroundTransparency = 1
 
-    -- [RESIZING LOGIC]
+    -- Logic Handling
     local draggingSize = false
-    local startPos, startSize
+    local dragging = false
+    local startPos, startSize, dragStart, startPosDrag
 
     ResizeHandle.MouseEnter:Connect(function() 
         Mouse.Icon = CURSOR_RESIZE 
-        ResizeIcon.TextColor3 = Color3.fromRGB(180, 50, 255) -- Glow effect
+        ResizeIcon.TextColor3 = Color3.fromRGB(180, 50, 255) 
     end)
     ResizeHandle.MouseLeave:Connect(function() 
         if not draggingSize then 
@@ -126,6 +127,9 @@ function BMLibrary:CreateWindow(title)
         end 
     end)
 
+    TitleLabel.MouseEnter:Connect(function() Mouse.Icon = CURSOR_DRAG end)
+    TitleLabel.MouseLeave:Connect(function() if not dragging then Mouse.Icon = "" end end)
+
     ResizeHandle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             draggingSize = true
@@ -133,13 +137,6 @@ function BMLibrary:CreateWindow(title)
             startSize = Main.Size
         end
     end)
-
-    -- [DRAGGING LOGIC]
-    local dragging = false
-    local dragStart, startPosDrag
-
-    TitleLabel.MouseEnter:Connect(function() Mouse.Icon = CURSOR_DRAG end)
-    TitleLabel.MouseLeave:Connect(function() if not dragging then Mouse.Icon = "" end end)
 
     TitleLabel.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -169,6 +166,7 @@ function BMLibrary:CreateWindow(title)
         end
     end)
 
+    -- TABS OBJECT
     local Tabs = { ActivePage = nil }
 
     function Tabs:CreateCategory(name)
