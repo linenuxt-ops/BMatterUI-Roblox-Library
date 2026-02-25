@@ -1,5 +1,5 @@
 local BMLibrary = {
-    Version = 1.8
+    Version = 1.9
 }
 
 local CoreGui = game:GetService("CoreGui")
@@ -7,9 +7,9 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Mouse = game:GetService("Players").LocalPlayer:GetMouse()
 
--- Custom Cursor Assets
-local CURSOR_DRAG = "rbxassetid://14306659913" 
-local CURSOR_RESIZE = "rbxassetid://14306664531"
+-- Standard Cursor Assets
+local CURSOR_DRAG = "rbxassetid://163023520" -- Dragon/Grab (Reliable ID)
+local CURSOR_RESIZE = "rbxassetid://13404403816" -- Diagonal Resize
 
 local function ForceCleanup()
     for _, child in ipairs(CoreGui:GetChildren()) do
@@ -40,28 +40,29 @@ function BMLibrary:CreateWindow(title)
     Main.Active = true
     Main.ClipsDescendants = true
 
-    -- Resize Handle (Bottom Right)
-    local ResizeHandle = Instance.new("Frame", Main)
+    -- LARGER Resize Handle (Bottom Right)
+    local ResizeHandle = Instance.new("TextButton", Main) -- Changed to TextButton for better hit detection
     ResizeHandle.Name = "ResizeHandle"
-    ResizeHandle.Size = UDim2.new(0, 20, 0, 20)
-    ResizeHandle.Position = UDim2.new(1, -20, 1, -20)
+    ResizeHandle.Size = UDim2.new(0, 30, 0, 30) -- Larger hit area
+    ResizeHandle.Position = UDim2.new(1, -30, 1, -30)
     ResizeHandle.BackgroundTransparency = 1
-    ResizeHandle.ZIndex = 10
+    ResizeHandle.Text = ""
+    ResizeHandle.ZIndex = 100
 
-    -- Header Title
-    local TitleLabel = Instance.new("TextLabel", Main)
+    -- Header Title (Drag Handle)
+    local TitleLabel = Instance.new("TextButton", Main) -- Changed to Button to ensure cursor works
+    TitleLabel.Name = "TitleHandle"
     TitleLabel.BackgroundTransparency = 1
-    TitleLabel.Position = UDim2.new(0, 12, 0, 0)
-    TitleLabel.Size = UDim2.new(1, -24, 0, 35)
+    TitleLabel.Position = UDim2.new(0, 0, 0, 0)
+    TitleLabel.Size = UDim2.new(1, 0, 0, 35)
     TitleLabel.Font = Enum.Font.GothamBold
-    TitleLabel.Text = title or "BMLibrary"
+    TitleLabel.Text = "   " .. (title or "BMLibrary")
     TitleLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
     TitleLabel.TextSize = 14
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
     -- Horizontal Gray Line
     local HorizontalLine = Instance.new("Frame", Main)
-    HorizontalLine.Name = "HorizontalLine"
     HorizontalLine.Position = UDim2.new(0, 0, 0, 35)
     HorizontalLine.Size = UDim2.new(1, 0, 0, 1)
     HorizontalLine.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
@@ -69,42 +70,17 @@ function BMLibrary:CreateWindow(title)
 
     -- Vertical Gray Separator
     local VerticalLine = Instance.new("Frame", Main)
-    VerticalLine.Name = "VerticalLine"
     VerticalLine.Position = UDim2.new(0, 120, 0, 36)
     VerticalLine.Size = UDim2.new(0, 1, 1, -36)
     VerticalLine.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
     VerticalLine.BorderSizePixel = 0
 
-    -- Sidebar
-    local Sidebar = Instance.new("ScrollingFrame", Main)
-    Sidebar.Name = "Sidebar"
-    Sidebar.Position = UDim2.new(0, 5, 0, 40)
-    Sidebar.Size = UDim2.new(0, 110, 1, -45)
-    Sidebar.BackgroundTransparency = 1
-    Sidebar.BorderSizePixel = 0
-    Sidebar.ScrollBarThickness = 0
-
-    local SidebarLayout = Instance.new("UIListLayout", Sidebar)
-    SidebarLayout.Padding = UDim.new(0, 5)
-    SidebarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-
-    -- Pages
-    local PageFolder = Instance.new("Frame", Main)
-    PageFolder.Name = "Pages"
-    PageFolder.Position = UDim2.new(0, 130, 0, 45)
-    PageFolder.Size = UDim2.new(1, -140, 1, -55)
-    PageFolder.BackgroundTransparency = 1
-
-    -- [RESIZING LOGIC + CURSOR]
+    -- [RESIZING LOGIC]
     local draggingSize = false
     local startPos, startSize
 
-    ResizeHandle.MouseEnter:Connect(function()
-        Mouse.Icon = CURSOR_RESIZE
-    end)
-    ResizeHandle.MouseLeave:Connect(function()
-        if not draggingSize then Mouse.Icon = "" end
-    end)
+    ResizeHandle.MouseEnter:Connect(function() Mouse.Icon = CURSOR_RESIZE end)
+    ResizeHandle.MouseLeave:Connect(function() if not draggingSize then Mouse.Icon = "" end end)
 
     ResizeHandle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -114,16 +90,12 @@ function BMLibrary:CreateWindow(title)
         end
     end)
 
-    -- [DRAGGING LOGIC + CURSOR]
+    -- [DRAGGING LOGIC]
     local dragging = false
     local dragStart, startPosDrag
 
-    TitleLabel.MouseEnter:Connect(function()
-        Mouse.Icon = CURSOR_DRAG
-    end)
-    TitleLabel.MouseLeave:Connect(function()
-        if not dragging then Mouse.Icon = "" end
-    end)
+    TitleLabel.MouseEnter:Connect(function() Mouse.Icon = CURSOR_DRAG end)
+    TitleLabel.MouseLeave:Connect(function() if not dragging then Mouse.Icon = "" end end)
 
     TitleLabel.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -152,6 +124,7 @@ function BMLibrary:CreateWindow(title)
             Mouse.Icon = ""
         end
     end)
+
 
     local Tabs = { ActivePage = nil }
 
