@@ -13,6 +13,10 @@ local TOGGLE_OFF = Color3.fromRGB(45, 45, 45)
 local SLIDER_BG = Color3.fromRGB(45, 45, 45)
 local ELEMENT_BG = Color3.fromRGB(30, 30, 35)
 
+-- Standard Cursor Assets
+local CURSOR_DRAG = "rbxassetid://163023520" 
+local CURSOR_RESIZE = "rbxassetid://13404403816"
+
 local function ForceCleanup()
     for _, child in ipairs(CoreGui:GetChildren()) do
         if child.Name == "BMLibrary_Root" or child:GetAttribute("BMLib_Version") then
@@ -31,6 +35,7 @@ function BMLibrary:CreateWindow(title)
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     ScreenGui:SetAttribute("BMLib_Version", self.Version)
 
+    -- Main Window
     local Main = Instance.new("Frame", ScreenGui)
     Main.Name = "Main"
     Main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
@@ -40,6 +45,27 @@ function BMLibrary:CreateWindow(title)
     Main.Active = true
     Main.ClipsDescendants = true
 
+    -- Resize Icon
+    local ResizeIcon = Instance.new("TextLabel", Main)
+    ResizeIcon.Name = "ResizeIcon"
+    ResizeIcon.BackgroundTransparency = 1
+    ResizeIcon.Position = UDim2.new(1, -15, 1, -15)
+    ResizeIcon.Size = UDim2.new(0, 15, 0, 15)
+    ResizeIcon.Font = Enum.Font.GothamBold
+    ResizeIcon.Text = "◢" 
+    ResizeIcon.TextColor3 = Color3.fromRGB(80, 40, 110)
+    ResizeIcon.TextSize = 16
+    ResizeIcon.ZIndex = 5
+
+    local ResizeHandle = Instance.new("TextButton", Main)
+    ResizeHandle.Name = "ResizeHandle"
+    ResizeHandle.Size = UDim2.new(0, 30, 0, 30)
+    ResizeHandle.Position = UDim2.new(1, -30, 1, -30)
+    ResizeHandle.BackgroundTransparency = 1
+    ResizeHandle.Text = ""
+    ResizeHandle.ZIndex = 100
+
+    -- Header Title (Drag Handle)
     local TitleLabel = Instance.new("TextButton", Main)
     TitleLabel.Name = "TitleHandle"
     TitleLabel.BackgroundTransparency = 1
@@ -56,7 +82,15 @@ function BMLibrary:CreateWindow(title)
     HorizontalLine.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
     HorizontalLine.BorderSizePixel = 0
 
+    local VerticalLine = Instance.new("Frame", Main)
+    VerticalLine.Position = UDim2.new(0, 120, 0, 36)
+    VerticalLine.Size = UDim2.new(0, 1, 1, -36)
+    VerticalLine.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+    VerticalLine.BorderSizePixel = 0
+
+    -- Sidebar
     local Sidebar = Instance.new("ScrollingFrame", Main)
+    Sidebar.Name = "Sidebar"
     Sidebar.Position = UDim2.new(0, 5, 0, 40)
     Sidebar.Size = UDim2.new(0, 110, 1, -45)
     Sidebar.BackgroundTransparency = 1
@@ -69,14 +103,20 @@ function BMLibrary:CreateWindow(title)
         Sidebar.CanvasSize = UDim2.new(0, 0, 0, SidebarLayout.AbsoluteContentSize.Y)
     end)
 
+    -- Page Container
     local PageFolder = Instance.new("Frame", Main)
     PageFolder.Name = "Pages"
     PageFolder.Position = UDim2.new(0, 130, 0, 45)
     PageFolder.Size = UDim2.new(1, -140, 1, -55)
     PageFolder.BackgroundTransparency = 1
 
-    -- Simple Dragging Logic
-    local dragging, dragStart, startPosDrag
+    -- Logic
+    local draggingSize, dragging = false, false
+    local startPos, startSize, dragStart, startPosDrag
+
+    ResizeHandle.MouseEnter:Connect(function() Mouse.Icon = CURSOR_RESIZE ResizeIcon.TextColor3 = THEME_COLOR end)
+    ResizeHandle.MouseLeave:Connect(function() if not draggingSize then Mouse.Icon = "" ResizeIcon.TextColor3 = Color3.fromRGB(80, 40, 110) end end)
+
     TitleLabel.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
@@ -84,13 +124,34 @@ function BMLibrary:CreateWindow(title)
             startPosDrag = Main.Position
         end
     end)
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - dragStart
-            Main.Position = UDim2.new(startPosDrag.X.Scale, startPosDrag.X.Offset + delta.X, startPosDrag.Y.Scale, startPosDrag.Y.Offset + delta.Y)
+
+    ResizeHandle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            draggingSize = true
+            startPos = input.Position
+            startSize = Main.Size
         end
     end)
-    UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            if draggingSize then
+                local delta = input.Position - startPos
+                Main.Size = UDim2.new(0, math.max(300, startSize.X.Offset + delta.X), 0, math.max(200, startSize.Y.Offset + delta.Y))
+            elseif dragging then
+                local delta = input.Position - dragStart
+                Main.Position = UDim2.new(startPosDrag.X.Scale, startPosDrag.X.Offset + delta.X, startPosDrag.Y.Scale, startPosDrag.Y.Offset + delta.Y)
+            end
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            draggingSize = false
+            dragging = false
+            Mouse.Icon = ""
+        end
+    end)
 
     local Tabs = { ActivePage = nil }
 
@@ -104,6 +165,7 @@ function BMLibrary:CreateWindow(title)
         Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 4)
 
         local Page = Instance.new("ScrollingFrame", PageFolder)
+        Page.Name = name .. "_Page"
         Page.Size = UDim2.new(1, 0, 1, 0)
         Page.BackgroundTransparency, Page.BorderSizePixel = 1, 0
         Page.Visible = false
@@ -118,10 +180,12 @@ function BMLibrary:CreateWindow(title)
         local function Switch()
             for _, p in pairs(PageFolder:GetChildren()) do p.Visible = false end
             for _, b in pairs(Sidebar:GetChildren()) do 
-                if b:IsA("TextButton") then b.BackgroundColor3 = Color3.fromRGB(25, 25, 30) b.TextColor3 = Color3.fromRGB(150, 150, 150) end
+                if b:IsA("TextButton") then
+                    b.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+                    b.TextColor3 = Color3.fromRGB(150, 150, 150)
+                end
             end
-            Page.Visible = true
-            TabBtn.BackgroundColor3, TabBtn.TextColor3 = Color3.fromRGB(40, 35, 50), Color3.new(1, 1, 1)
+            Page.Visible, TabBtn.BackgroundColor3, TabBtn.TextColor3 = true, Color3.fromRGB(40, 35, 50), Color3.new(1, 1, 1)
         end
 
         TabBtn.MouseButton1Click:Connect(Switch)
@@ -226,7 +290,7 @@ function BMLibrary:CreateWindow(title)
             local Container = Instance.new("Frame", Page)
             Container.Size, Container.BackgroundTransparency = UDim2.new(1, -5, 0, 35), 1
             local CLayout = Instance.new("UIListLayout", Container)
-            CLayout.Padding = UDim.new(0, 5)
+            CLayout.SortOrder, CLayout.Padding = Enum.SortOrder.LayoutOrder, UDim.new(0, 5)
 
             local MainBtn = Instance.new("TextButton", Container)
             MainBtn.Size, MainBtn.BackgroundColor3, MainBtn.Text = UDim2.new(1, 0, 0, 35), ELEMENT_BG, "  " .. text .. " : Select"
@@ -243,7 +307,7 @@ function BMLibrary:CreateWindow(title)
             MainBtn.MouseButton1Click:Connect(function()
                 isOpen = not isOpen
                 local targetSize = isOpen and UDim2.new(1, 0, 0, #list * 32) or UDim2.new(1, 0, 0, 0)
-                TweenService:Create(AnimContainer, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = targetSize, GroupTransparency = isOpen and 0 or 1}):Play()
+                TweenService:Create(AnimContainer, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = targetSize, GroupTransparency = isOpen and 0 or 1}):Play()
             end)
 
             for _, item in pairs(list) do
