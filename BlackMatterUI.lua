@@ -1,11 +1,15 @@
 local BMLibrary = {
-    Version = 2.4
+    Version = 2.5
 }
 
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Mouse = game:GetService("Players").LocalPlayer:GetMouse()
+
+-- Theme Colors
+local THEME_COLOR = Color3.fromRGB(180, 50, 255) -- Purple Glow
+local TOGGLE_OFF = Color3.fromRGB(45, 45, 45)
 
 -- Standard Cursor Assets
 local CURSOR_DRAG = "rbxassetid://163023520" 
@@ -52,7 +56,6 @@ function BMLibrary:CreateWindow(title)
     ResizeIcon.TextSize = 16
     ResizeIcon.ZIndex = 5
 
-    -- Large Resize Handle Hitbox
     local ResizeHandle = Instance.new("TextButton", Main)
     ResizeHandle.Name = "ResizeHandle"
     ResizeHandle.Size = UDim2.new(0, 30, 0, 30)
@@ -110,12 +113,11 @@ function BMLibrary:CreateWindow(title)
     PageFolder.Size = UDim2.new(1, -140, 1, -55)
     PageFolder.BackgroundTransparency = 1
 
-    -- Logic Handling
+    -- Resizing/Dragging Logic
     local draggingSize = false
     local dragging = false
     local startPos, startSize, dragStart, startPosDrag
 
-    -- Cursor Logic
     ResizeHandle.MouseEnter:Connect(function() 
         Mouse.Icon = CURSOR_RESIZE 
         ResizeIcon.TextColor3 = Color3.fromRGB(180, 50, 255) 
@@ -127,23 +129,19 @@ function BMLibrary:CreateWindow(title)
         end 
     end)
 
-    TitleLabel.MouseEnter:Connect(function() Mouse.Icon = CURSOR_DRAG end)
-    TitleLabel.MouseLeave:Connect(function() if not dragging then Mouse.Icon = "" end end)
-
-    -- Interaction Handling
-    ResizeHandle.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            draggingSize = true
-            startPos = input.Position
-            startSize = Main.Size
-        end
-    end)
-
     TitleLabel.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             dragStart = input.Position
             startPosDrag = Main.Position
+        end
+    end)
+
+    ResizeHandle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            draggingSize = true
+            startPos = input.Position
+            startSize = Main.Size
         end
     end)
 
@@ -167,7 +165,6 @@ function BMLibrary:CreateWindow(title)
         end
     end)
 
-    -- Main Tabs Interface
     local Tabs = { ActivePage = nil }
 
     function Tabs:CreateCategory(name)
@@ -187,8 +184,7 @@ function BMLibrary:CreateWindow(title)
         Page.BackgroundTransparency = 1
         Page.BorderSizePixel = 0
         Page.Visible = false
-        Page.ScrollBarThickness = 2
-        Page.ScrollBarImageColor3 = Color3.fromRGB(180, 50, 255)
+        Page.ScrollBarThickness = 0
 
         local PageLayout = Instance.new("UIListLayout", Page)
         PageLayout.Padding = UDim.new(0, 6)
@@ -214,7 +210,6 @@ function BMLibrary:CreateWindow(title)
 
         local Elements = {}
 
-        -- BUTTON WITHOUT BORDER
         function Elements:CreateButton(text, callback)
             local Btn = Instance.new("TextButton", Page)
             Btn.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
@@ -225,8 +220,52 @@ function BMLibrary:CreateWindow(title)
             Btn.TextSize = 13
             Btn.BorderSizePixel = 0
             Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 4)
-
             Btn.MouseButton1Click:Connect(callback)
+        end
+
+        function Elements:CreateToggle(text, default, callback)
+            local state = default
+            local Container = Instance.new("TextButton", Page)
+            Container.Name = text .. "_Toggle"
+            Container.Size = UDim2.new(1, -5, 0, 30)
+            Container.BackgroundTransparency = 1
+            Container.Text = ""
+
+            local Label = Instance.new("TextLabel", Container)
+            Label.Size = UDim2.new(1, -50, 1, 0)
+            Label.BackgroundTransparency = 1
+            Label.Text = text
+            Label.TextColor3 = Color3.new(1, 1, 1)
+            Label.Font = Enum.Font.GothamSemibold
+            Label.TextSize = 13
+            Label.TextXAlignment = Enum.TextXAlignment.Left
+
+            local Outer = Instance.new("Frame", Container)
+            Outer.Size = UDim2.new(0, 38, 0, 20)
+            Outer.Position = UDim2.new(1, -40, 0.5, -10)
+            Outer.BackgroundColor3 = TOGGLE_OFF
+            Instance.new("UICorner", Outer).CornerRadius = UDim.new(1, 0)
+
+            local Inner = Instance.new("Frame", Outer)
+            Inner.Size = UDim2.new(0, 14, 0, 14)
+            Inner.Position = UDim2.new(0, 3, 0.5, -7)
+            Inner.BackgroundColor3 = Color3.new(1, 1, 1)
+            Instance.new("UICorner", Inner).CornerRadius = UDim.new(1, 0)
+
+            local function Update()
+                local targetPos = state and UDim2.new(0, 21, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
+                local targetCol = state and THEME_COLOR or TOGGLE_OFF
+                TweenService:Create(Inner, TweenInfo.new(0.2), {Position = targetPos}):Play()
+                TweenService:Create(Outer, TweenInfo.new(0.2), {BackgroundColor3 = targetCol}):Play()
+                callback(state)
+            end
+
+            Container.MouseButton1Click:Connect(function()
+                state = not state
+                Update()
+            end)
+
+            Update()
         end
 
         return Elements
