@@ -1,5 +1,5 @@
 local BMLibrary = {
-    Version = 3.2
+    Version = 3.4
 }
 
 local CoreGui = game:GetService("CoreGui")
@@ -193,17 +193,41 @@ function BMLibrary:CreateWindow(title)
 
         local Elements = {}
 
-        -- Sonata Style Input Text
+        -- NEW FEATURE: CreateLabel with Alignment
+        function Elements:CreateLabel(text, align)
+            local Label = Instance.new("TextLabel", Page)
+            Label.Size = UDim2.new(1, -5, 0, 20)
+            Label.BackgroundTransparency = 1
+            Label.Text = text
+            Label.TextColor3 = Color3.fromRGB(200, 200, 200)
+            Label.Font = Enum.Font.GothamSemibold
+            Label.TextSize = 13
+            
+            if align == "Center" or align == "Middle" then
+                Label.TextXAlignment = Enum.TextXAlignment.Center
+            elseif align == "Right" then
+                Label.TextXAlignment = Enum.TextXAlignment.Right
+            else
+                Label.TextXAlignment = Enum.TextXAlignment.Left
+            end
+        end
+
+        -- UPDATED FEATURE: Same-line CreateInput
         function Elements:CreateInput(text, placeholder, callback)
-            local InputFrame = Instance.new("Frame", Page)
-            InputFrame.Size, InputFrame.BackgroundTransparency = UDim2.new(1, -5, 0, 45), 1
+            local Container = Instance.new("Frame", Page)
+            Container.Size, Container.BackgroundTransparency = UDim2.new(1, -5, 0, 32), 1
             
-            local Label = Instance.new("TextLabel", InputFrame)
-            Label.Size, Label.BackgroundTransparency, Label.Text = UDim2.new(1, 0, 0, 15), 1, text
-            Label.TextColor3, Label.Font, Label.TextSize, Label.TextXAlignment = Color3.fromRGB(200, 200, 200), Enum.Font.GothamSemibold, 11, Enum.TextXAlignment.Left
-            
-            local BoxContainer = Instance.new("Frame", InputFrame)
-            BoxContainer.Size, BoxContainer.Position = UDim2.new(1, 0, 0, 26), UDim2.new(0, 0, 0, 18)
+            local Label = Instance.new("TextLabel", Container)
+            Label.Size = UDim2.new(0.4, 0, 1, 0)
+            Label.BackgroundTransparency = 1
+            Label.Text = text
+            Label.TextColor3 = Color3.new(1, 1, 1)
+            Label.Font, Label.TextSize, Label.TextXAlignment = Enum.Font.GothamSemibold, 13, Enum.TextXAlignment.Left
+
+            local BoxContainer = Instance.new("Frame", Container)
+            BoxContainer.Size = UDim2.new(0.55, 0, 0, 28)
+            BoxContainer.Position = UDim2.new(1, 0, 0.5, 0)
+            BoxContainer.AnchorPoint = Vector2.new(1, 0.5)
             BoxContainer.BackgroundColor3 = ELEMENT_BG
             Instance.new("UICorner", BoxContainer).CornerRadius = UDim.new(0, 4)
             
@@ -211,11 +235,11 @@ function BMLibrary:CreateWindow(title)
             Stroke.Thickness, Stroke.Color, Stroke.ApplyStrokeMode = 1, Color3.fromRGB(45, 45, 50), Enum.ApplyStrokeMode.Border
 
             local Box = Instance.new("TextBox", BoxContainer)
-            Box.Size, Box.BackgroundTransparency = UDim2.new(1, -10, 1, 0), 1
+            Box.Size = UDim2.new(1, -10, 1, 0)
             Box.Position = UDim2.new(0, 5, 0, 0)
-            Box.Text, Box.PlaceholderText = "", placeholder or "Enter text..."
-            Box.TextColor3, Box.PlaceholderColor3 = Color3.new(1, 1, 1), Color3.fromRGB(100, 100, 100)
-            Box.Font, Box.TextSize, Box.TextXAlignment = Enum.Font.GothamSemibold, 12, Enum.TextXAlignment.Left
+            Box.BackgroundTransparency = 1
+            Box.Text, Box.PlaceholderText = "", placeholder or "..."
+            Box.TextColor3, Box.Font, Box.TextSize = Color3.new(1, 1, 1), Enum.Font.GothamSemibold, 12
             Box.ClearTextOnFocus = false
 
             Box.Focused:Connect(function() TweenService:Create(Stroke, TweenInfo.new(0.2), {Color = THEME_COLOR}):Play() end)
