@@ -1,5 +1,5 @@
 local BMLibrary = {
-    Version = 2.5
+    Version = 2.6
 }
 
 local CoreGui = game:GetService("CoreGui")
@@ -8,8 +8,9 @@ local UserInputService = game:GetService("UserInputService")
 local Mouse = game:GetService("Players").LocalPlayer:GetMouse()
 
 -- Theme Colors
-local THEME_COLOR = Color3.fromRGB(180, 50, 255) -- Purple Glow
+local THEME_COLOR = Color3.fromRGB(180, 50, 255) 
 local TOGGLE_OFF = Color3.fromRGB(45, 45, 45)
+local SLIDER_BG = Color3.fromRGB(45, 45, 45)
 
 -- Standard Cursor Assets
 local CURSOR_DRAG = "rbxassetid://163023520" 
@@ -120,7 +121,7 @@ function BMLibrary:CreateWindow(title)
 
     ResizeHandle.MouseEnter:Connect(function() 
         Mouse.Icon = CURSOR_RESIZE 
-        ResizeIcon.TextColor3 = Color3.fromRGB(180, 50, 255) 
+        ResizeIcon.TextColor3 = THEME_COLOR 
     end)
     ResizeHandle.MouseLeave:Connect(function() 
         if not draggingSize then 
@@ -184,7 +185,8 @@ function BMLibrary:CreateWindow(title)
         Page.BackgroundTransparency = 1
         Page.BorderSizePixel = 0
         Page.Visible = false
-        Page.ScrollBarThickness = 0
+        Page.ScrollBarThickness = 2
+        Page.ScrollBarImageColor3 = THEME_COLOR
 
         local PageLayout = Instance.new("UIListLayout", Page)
         PageLayout.Padding = UDim.new(0, 6)
@@ -226,7 +228,6 @@ function BMLibrary:CreateWindow(title)
         function Elements:CreateToggle(text, default, callback)
             local state = default
             local Container = Instance.new("TextButton", Page)
-            Container.Name = text .. "_Toggle"
             Container.Size = UDim2.new(1, -5, 0, 30)
             Container.BackgroundTransparency = 1
             Container.Text = ""
@@ -266,6 +267,71 @@ function BMLibrary:CreateWindow(title)
             end)
 
             Update()
+        end
+
+        function Elements:CreateSlider(text, min, max, default, callback)
+            local SliderFrame = Instance.new("Frame", Page)
+            SliderFrame.Size = UDim2.new(1, -5, 0, 50)
+            SliderFrame.BackgroundTransparency = 1
+
+            local Label = Instance.new("TextLabel", SliderFrame)
+            Label.Size = UDim2.new(1, 0, 0, 20)
+            Label.BackgroundTransparency = 1
+            Label.Text = text
+            Label.TextColor3 = Color3.new(1,1,1)
+            Label.Font = Enum.Font.GothamSemibold
+            Label.TextSize = 13
+            Label.TextXAlignment = Enum.TextXAlignment.Left
+
+            local ValueLabel = Instance.new("TextLabel", SliderFrame)
+            ValueLabel.Size = UDim2.new(1, 0, 0, 20)
+            ValueLabel.BackgroundTransparency = 1
+            ValueLabel.Text = tostring(default)
+            ValueLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+            ValueLabel.Font = Enum.Font.GothamSemibold
+            ValueLabel.TextSize = 12
+            ValueLabel.TextXAlignment = Enum.TextXAlignment.Right
+
+            local SliderBack = Instance.new("Frame", SliderFrame)
+            SliderBack.Size = UDim2.new(1, 0, 0, 6)
+            SliderBack.Position = UDim2.new(0, 0, 0, 30)
+            SliderBack.BackgroundColor3 = SLIDER_BG
+            SliderBack.BorderSizePixel = 0
+            Instance.new("UICorner", SliderBack).CornerRadius = UDim.new(0, 4)
+
+            local SliderFill = Instance.new("Frame", SliderBack)
+            SliderFill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+            SliderFill.BackgroundColor3 = THEME_COLOR
+            SliderFill.BorderSizePixel = 0
+            Instance.new("UICorner", SliderFill).CornerRadius = UDim.new(0, 4)
+
+            local function Update(input)
+                local pos = math.clamp((input.Position.X - SliderBack.AbsolutePosition.X) / SliderBack.AbsoluteSize.X, 0, 1)
+                local val = math.floor(min + (max - min) * pos)
+                TweenService:Create(SliderFill, TweenInfo.new(0.1), {Size = UDim2.new(pos, 0, 1, 0)}):Play()
+                ValueLabel.Text = tostring(val)
+                callback(val)
+            end
+
+            local sdragging = false
+            SliderBack.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    sdragging = true
+                    Update(input)
+                end
+            end)
+
+            UserInputService.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    sdragging = false
+                end
+            end)
+
+            UserInputService.InputChanged:Connect(function(input)
+                if sdragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                    Update(input)
+                end
+            end)
         end
 
         return Elements
