@@ -1,11 +1,15 @@
 local BMLibrary = {
-    Version = 1.7
+    Version = 1.8
 }
 
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Mouse = game:GetService("Players").LocalPlayer:GetMouse()
+
+-- Custom Cursor Assets
+local CURSOR_DRAG = "rbxassetid://14306659913" 
+local CURSOR_RESIZE = "rbxassetid://14306664531"
 
 local function ForceCleanup()
     for _, child in ipairs(CoreGui:GetChildren()) do
@@ -39,8 +43,8 @@ function BMLibrary:CreateWindow(title)
     -- Resize Handle (Bottom Right)
     local ResizeHandle = Instance.new("Frame", Main)
     ResizeHandle.Name = "ResizeHandle"
-    ResizeHandle.Size = UDim2.new(0, 15, 0, 15)
-    ResizeHandle.Position = UDim2.new(1, -15, 1, -15)
+    ResizeHandle.Size = UDim2.new(0, 20, 0, 20)
+    ResizeHandle.Position = UDim2.new(1, -20, 1, -20)
     ResizeHandle.BackgroundTransparency = 1
     ResizeHandle.ZIndex = 10
 
@@ -91,9 +95,16 @@ function BMLibrary:CreateWindow(title)
     PageFolder.Size = UDim2.new(1, -140, 1, -55)
     PageFolder.BackgroundTransparency = 1
 
-    -- [RESIZING LOGIC]
+    -- [RESIZING LOGIC + CURSOR]
     local draggingSize = false
     local startPos, startSize
+
+    ResizeHandle.MouseEnter:Connect(function()
+        Mouse.Icon = CURSOR_RESIZE
+    end)
+    ResizeHandle.MouseLeave:Connect(function()
+        if not draggingSize then Mouse.Icon = "" end
+    end)
 
     ResizeHandle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -103,24 +114,16 @@ function BMLibrary:CreateWindow(title)
         end
     end)
 
-    UserInputService.InputChanged:Connect(function(input)
-        if draggingSize and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - startPos
-            local newWidth = math.max(300, startSize.X.Offset + delta.X)
-            local newHeight = math.max(200, startSize.Y.Offset + delta.Y)
-            Main.Size = UDim2.new(0, newWidth, 0, newHeight)
-        end
-    end)
-
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            draggingSize = false
-        end
-    end)
-
-    -- [DRAGGING LOGIC]
+    -- [DRAGGING LOGIC + CURSOR]
     local dragging = false
-    local dragInput, dragStart, startPosDrag
+    local dragStart, startPosDrag
+
+    TitleLabel.MouseEnter:Connect(function()
+        Mouse.Icon = CURSOR_DRAG
+    end)
+    TitleLabel.MouseLeave:Connect(function()
+        if not dragging then Mouse.Icon = "" end
+    end)
 
     TitleLabel.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -131,15 +134,22 @@ function BMLibrary:CreateWindow(title)
     end)
 
     UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - dragStart
-            Main.Position = UDim2.new(startPosDrag.X.Scale, startPosDrag.X.Offset + delta.X, startPosDrag.Y.Scale, startPosDrag.Y.Offset + delta.Y)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            if draggingSize then
+                local delta = input.Position - startPos
+                Main.Size = UDim2.new(0, math.max(300, startSize.X.Offset + delta.X), 0, math.max(200, startSize.Y.Offset + delta.Y))
+            elseif dragging then
+                local delta = input.Position - dragStart
+                Main.Position = UDim2.new(startPosDrag.X.Scale, startPosDrag.X.Offset + delta.X, startPosDrag.Y.Scale, startPosDrag.Y.Offset + delta.Y)
+            end
         end
     end)
 
     UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            draggingSize = false
             dragging = false
+            Mouse.Icon = ""
         end
     end)
 
