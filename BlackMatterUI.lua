@@ -10,12 +10,10 @@ function BlackMatterUI.new(titleText)
     local self = setmetatable({}, BlackMatterUI)
     
     local MENU_ID = "BlackMatterUI_Edition"
-    local VERSION_NUMBER = 8.0 -- Incremented for the aesthetic resize update
+    local VERSION_NUMBER = 8.0
 
     local existing = CoreGui:FindFirstChild(MENU_ID) or Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild(MENU_ID)
-    if existing then
-        existing:Destroy()
-    end
+    if existing then existing:Destroy() end
     
     _G.BlackMatterVersion = VERSION_NUMBER
 
@@ -36,7 +34,7 @@ function BlackMatterUI.new(titleText)
     MainFrame.Size, MainFrame.Position = UDim2.new(0, 750, 0, 500), UDim2.new(0.5, -375, 0.5, -250)
     MainFrame.BackgroundColor3, MainFrame.BackgroundTransparency = Color3.fromRGB(10, 12, 25), 0.15
     MainFrame.Active = true
-    MainFrame.ClipsDescendants = true -- CRITICAL: This makes the circle "slice" look like part of the corner
+    MainFrame.ClipsDescendants = true -- CRITICAL for the "Slice" effect
     Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
     self.MainFrame = MainFrame 
     
@@ -44,38 +42,54 @@ function BlackMatterUI.new(titleText)
     MainStroke.Thickness, MainStroke.Color, MainStroke.Transparency = 1.8, Color3.fromRGB(120, 80, 255), 0.5
     self.Accent = MainStroke
 
-   -- RESIZE CORNER CONTAINER (so it doesn't get clipped)
-local ResizeCorner = Instance.new("Frame", MainFrame)
-ResizeCorner.Size = UDim2.new(0, 26, 0, 26)
-ResizeCorner.Position = UDim2.new(1, -26, 1, -26)
-ResizeCorner.BackgroundTransparency = 1
-ResizeCorner.ZIndex = 100
-ResizeCorner.ClipsDescendants = false
+    -- ✅ TOP DRAG HANDLE BAR
+    local DragHandle = Instance.new("Frame", MainFrame)
+    DragHandle.Name = "DragHandle"
+    DragHandle.Size = UDim2.new(1, 0, 0, 28)
+    DragHandle.BackgroundColor3 = Color3.fromRGB(20, 22, 40)
+    DragHandle.BorderSizePixel = 0
+    DragHandle.ZIndex = 50
+    DragHandle.Active = true
 
--- Resize Button
-local ResizeHandle = Instance.new("ImageButton", ResizeCorner)
-ResizeHandle.Name = "ResizeHandle"
-ResizeHandle.Size = UDim2.new(1, 0, 1, 0)
-ResizeHandle.BackgroundTransparency = 1
-ResizeHandle.Image = "rbxassetid://6031064368"
-ResizeHandle.ImageColor3 = self.Accent.Color
-ResizeHandle.ImageTransparency = 0.2
-ResizeHandle.ZIndex = 101
+    local HandleCorner = Instance.new("UICorner", DragHandle)
+    HandleCorner.CornerRadius = UDim.new(0, 12)
 
--- Hover effect
-ResizeHandle.MouseEnter:Connect(function()
-    TweenService:Create(ResizeHandle, TweenInfo.new(0.2), {
-        ImageTransparency = 0,
-        Size = UDim2.new(1.1, 0, 1.1, 0)
-    }):Play()
-end)
+    local AccentLine = Instance.new("Frame", DragHandle)
+    AccentLine.Size = UDim2.new(1, 0, 0, 2)
+    AccentLine.Position = UDim2.new(0, 0, 1, -2)
+    AccentLine.BackgroundColor3 = MainStroke.Color
+    AccentLine.BorderSizePixel = 0
+    AccentLine.ZIndex = 51
 
-ResizeHandle.MouseLeave:Connect(function()
-    TweenService:Create(ResizeHandle, TweenInfo.new(0.2), {
-        ImageTransparency = 0.2,
-        Size = UDim2.new(1, 0, 1)
-    }):Play()
-end)
+    -- ✅ RESIZE CORNER SLICE
+    local ResizeCorner = Instance.new("Frame", MainFrame)
+    ResizeCorner.Size = UDim2.new(0, 30, 0, 30)
+    ResizeCorner.Position = UDim2.new(1, -15, 1, -15) -- Offset creates the "slice"
+    ResizeCorner.BackgroundTransparency = 1
+    ResizeCorner.ZIndex = 100
+
+    local ResizeHandle = Instance.new("ImageButton", ResizeCorner)
+    ResizeHandle.Name = "ResizeHandle"
+    ResizeHandle.Size = UDim2.new(1, 0, 1, 0)
+    ResizeHandle.BackgroundTransparency = 1
+    ResizeHandle.Image = "rbxassetid://6031064368"
+    ResizeHandle.ImageColor3 = MainStroke.Color
+    ResizeHandle.ImageTransparency = 0.4
+    ResizeHandle.ZIndex = 101
+
+    -- Hover effect for Resize Slice
+    ResizeHandle.MouseEnter:Connect(function()
+        TweenService:Create(ResizeHandle, TweenInfo.new(0.2), {
+            ImageTransparency = 0,
+            ImageColor3 = Color3.fromRGB(180, 150, 255) -- Brighten on hover
+        }):Play()
+    end)
+    ResizeHandle.MouseLeave:Connect(function()
+        TweenService:Create(ResizeHandle, TweenInfo.new(0.2), {
+            ImageTransparency = 0.4,
+            ImageColor3 = MainStroke.Color
+        }):Play()
+    end)
 
     -- Search Bar Logic
     local SearchFrame = Instance.new("Frame", MainFrame)
@@ -91,7 +105,6 @@ end)
     SearchInput.Font, SearchInput.TextSize, SearchInput.TextXAlignment = Enum.Font.Gotham, 13, Enum.TextXAlignment.Left
     SearchInput.ZIndex = 11
 
-    -- [Search Input Logic remains same as your previous code...]
     SearchInput:GetPropertyChangedSignal("Text"):Connect(function()
         local query = SearchInput.Text:lower()
         for _, page in pairs(self.Pages) do
@@ -142,7 +155,7 @@ end)
     local dragging, resizing = false, false
     local dragStart, startPos, startSize
 
-    MainFrame.InputBegan:Connect(function(input)
+    DragHandle.InputBegan:Connect(function(input)
         if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and not self.PickingColor then
             dragging = true
             dragStart = input.Position
@@ -155,9 +168,6 @@ end)
             resizing = true
             dragStart = input.Position
             startSize = MainFrame.Size
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then resizing = false end
-            end)
         end
     end)
 
