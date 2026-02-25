@@ -225,10 +225,6 @@ function BMLibrary:CreateWindow(title)
             Btn.TextSize = 13
             Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 4)
 
-            local Stroke = Instance.new("UIStroke", Btn)
-            Stroke.Color = Color3.fromRGB(100, 40, 100)
-            Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-
             Btn.MouseButton1Click:Connect(callback)
         end
 
