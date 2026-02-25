@@ -1,26 +1,56 @@
-local Library = {}
-local CoreGui = game:GetService("CoreGui")
-local TweenService = game:GetService("TweenService")
+local BMLibrary = {
+    Version = 1.0 -- Update this number when you push a big update
+}
 
-function Library:CreateWindow(title)
-    local ScreenGui = Instance.new("ScreenGui", CoreGui)
-    ScreenGui.Name = "Lib_" .. math.random(1000)
+local CoreGui = game:GetService("CoreGui")
+local GUI_NAME = "BMLibrary_Root"
+
+-- Logic to check if an old version exists and remove it
+local function RefreshUI(newVersion)
+    local existing = CoreGui:FindFirstChild(GUI_NAME)
+    if existing then
+        local oldVersion = existing:GetAttribute("Version") or 0
+        -- If the existing UI version is lower or equal, we replace it
+        if newVersion >= oldVersion then
+            existing:Destroy()
+            return false -- Proceed to create new UI
+        else
+            -- If a newer version is somehow already running, don't overwrite it
+            return true 
+        end
+    end
+    return false
+end
+
+function BMLibrary:CreateWindow(title)
+    if RefreshUI(self.Version) then 
+        warn("BMLibrary: A newer version is already running.")
+        return nil 
+    end
+
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = GUI_NAME
+    ScreenGui.Parent = CoreGui
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.SetAttribute(ScreenGui, "Version", self.Version)
 
     local Main = Instance.new("Frame", ScreenGui)
     Main.Size = UDim2.new(0, 400, 0, 300)
     Main.Position = UDim2.new(0.5, -200, 0.5, -150)
-    Main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    Main.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    Main.BorderSizePixel = 0
     Main.Active = true
     Main.Draggable = true
 
     -- Header
     local Header = Instance.new("TextLabel", Main)
     Header.Size = UDim2.new(1, 0, 0, 35)
-    Header.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-    Header.Text = "  " .. (title or "Roblox UI")
+    Header.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    Header.Text = "  " .. (title or "BMLibrary")
     Header.TextColor3 = Color3.new(1,1,1)
     Header.TextXAlignment = Enum.TextXAlignment.Left
     Header.Font = Enum.Font.GothamBold
+    Header.TextSize = 14
 
     local Container = Instance.new("ScrollingFrame", Main)
     Container.Size = UDim2.new(1, -20, 1, -45)
@@ -28,6 +58,7 @@ function Library:CreateWindow(title)
     Container.BackgroundTransparency = 1
     Container.CanvasSize = UDim2.new(0, 0, 0, 0)
     Container.ScrollBarThickness = 2
+    Container.BorderSizePixel = 0
 
     local Layout = Instance.new("UIListLayout", Container)
     Layout.Padding = UDim.new(0, 8)
@@ -39,14 +70,15 @@ function Library:CreateWindow(title)
 
     local Elements = {}
 
-    -- Button (With your custom dialog logic)
+    -- Button Implementation
     function Elements:CreateButton(text, callback)
         local Btn = Instance.new("TextButton", Container)
         Btn.Size = UDim2.new(1, 0, 0, 35)
-        Btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        Btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
         Btn.Text = text
         Btn.TextColor3 = Color3.new(1,1,1)
         Btn.Font = Enum.Font.Gotham
+        Btn.BorderSizePixel = 0
         Btn.AutoButtonColor = true
 
         Btn.MouseButton1Click:Connect(function()
@@ -54,25 +86,7 @@ function Library:CreateWindow(title)
         end)
     end
 
-    -- Toggle
-    function Elements:CreateToggle(text, callback)
-        local Tgl = Instance.new("TextButton", Container)
-        Tgl.Size = UDim2.new(1, 0, 0, 35)
-        Tgl.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        Tgl.Text = "  " .. text .. ": OFF"
-        Tgl.TextColor3 = Color3.new(0.7,0.7,0.7)
-        Tgl.TextXAlignment = Enum.TextXAlignment.Left
-
-        local state = false
-        Tgl.MouseButton1Click:Connect(function()
-            state = not state
-            Tgl.Text = "  " .. text .. (state and ": ON" or ": OFF")
-            Tgl.TextColor3 = state and Color3.new(0, 1, 0.5) or Color3.new(0.7,0.7,0.7)
-            callback(state)
-        end)
-    end
-
     return Elements
 end
 
-return Library
+return BMLibrary
