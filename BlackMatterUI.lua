@@ -1,38 +1,30 @@
 local BMLibrary = {
-    Version = 1.0 -- Update this number when you push a big update
+    Version = 1.1 -- Keep this number updated
 }
 
 local CoreGui = game:GetService("CoreGui")
-local GUI_NAME = "BMLibrary_Root"
 
--- Logic to check if an old version exists and remove it
-local function RefreshUI(newVersion)
-    local existing = CoreGui:FindFirstChild(GUI_NAME)
-    if existing then
-        local oldVersion = existing:GetAttribute("Version") or 0
-        -- If the existing UI version is lower or equal, we replace it
-        if newVersion >= oldVersion then
-            existing:Destroy()
-            return false -- Proceed to create new UI
-        else
-            -- If a newer version is somehow already running, don't overwrite it
-            return true 
+-- IMPROVED: Stronger cleanup logic
+local function ForceCleanup()
+    for _, child in ipairs(CoreGui:GetChildren()) do
+        -- Checks for the specific name OR any GUI that has a "Version" attribute from us
+        if child.Name == "BMLibrary_Root" or child.Name == "BlackMatterUI_Root" or child:GetAttribute("BMLib_Version") then
+            child:Destroy()
         end
     end
-    return false
 end
 
 function BMLibrary:CreateWindow(title)
-    if RefreshUI(self.Version) then 
-        warn("BMLibrary: A newer version is already running.")
-        return nil 
-    end
+    -- Run cleanup BEFORE doing anything else
+    ForceCleanup()
+    task.wait(0.1) -- Short delay to ensure destruction is processed
 
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = GUI_NAME
+    ScreenGui.Name = "BMLibrary_Root"
     ScreenGui.Parent = CoreGui
     ScreenGui.ResetOnSpawn = false
-    ScreenGui.SetAttribute(ScreenGui, "Version", self.Version)
+    -- Identify this GUI for future cleanup
+    ScreenGui:SetAttribute("BMLib_Version", self.Version)
 
     local Main = Instance.new("Frame", ScreenGui)
     Main.Size = UDim2.new(0, 400, 0, 300)
@@ -70,7 +62,6 @@ function BMLibrary:CreateWindow(title)
 
     local Elements = {}
 
-    -- Button Implementation
     function Elements:CreateButton(text, callback)
         local Btn = Instance.new("TextButton", Container)
         Btn.Size = UDim2.new(1, 0, 0, 35)
@@ -79,7 +70,6 @@ function BMLibrary:CreateWindow(title)
         Btn.TextColor3 = Color3.new(1,1,1)
         Btn.Font = Enum.Font.Gotham
         Btn.BorderSizePixel = 0
-        Btn.AutoButtonColor = true
 
         Btn.MouseButton1Click:Connect(function()
             if callback then callback() end
