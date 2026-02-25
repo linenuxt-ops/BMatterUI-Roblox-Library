@@ -1,5 +1,5 @@
 local BMLibrary = {
-    Version = 2.3
+    Version = 2.4
 }
 
 local CoreGui = game:GetService("CoreGui")
@@ -214,7 +214,7 @@ function BMLibrary:CreateWindow(title)
 
         local Elements = {}
 
-        -- RESTORED YOUR PREVIOUS BUTTON FUNCTION
+        -- BUTTON WITHOUT BORDER
         function Elements:CreateButton(text, callback)
             local Btn = Instance.new("TextButton", Page)
             Btn.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
@@ -223,6 +223,7 @@ function BMLibrary:CreateWindow(title)
             Btn.Text = text
             Btn.TextColor3 = Color3.fromRGB(200, 200, 200)
             Btn.TextSize = 13
+            Btn.BorderSizePixel = 0
             Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 4)
 
             Btn.MouseButton1Click:Connect(callback)
