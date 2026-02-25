@@ -10,7 +10,7 @@ function BlackMatterUI.new(titleText)
     local self = setmetatable({}, BlackMatterUI)
     
     local MENU_ID = "BlackMatterUI_Edition"
-    local VERSION_NUMBER = 7.9 -- Incremented for the aesthetic resize update
+    local VERSION_NUMBER = 8.0 -- Incremented for the aesthetic resize update
 
     local existing = CoreGui:FindFirstChild(MENU_ID) or Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild(MENU_ID)
     if existing then
@@ -44,18 +44,38 @@ function BlackMatterUI.new(titleText)
     MainStroke.Thickness, MainStroke.Color, MainStroke.Transparency = 1.8, Color3.fromRGB(120, 80, 255), 0.5
     self.Accent = MainStroke
 
-    -- ROUNDED RESIZE HANDLE (Slice of circle)
-    -- ROUNDED RESIZE HANDLE (Visible Slice)
-    local ResizeHandle = Instance.new("ImageButton", MainFrame)
-    ResizeHandle.Name = "ResizeHandle"
-    ResizeHandle.Size = UDim2.new(0, 22, 0, 22) -- Slightly smaller
-    -- Move it slightly INWARD (5 pixels) so it survives the clipping
-    ResizeHandle.Position = UDim2.new(1, -18, 1, -18) 
-    ResizeHandle.BackgroundTransparency = 1
-    ResizeHandle.Image = "rbxassetid://6031064368" -- Standard circle
-    ResizeHandle.ImageColor3 = Color3.fromRGB(120, 80, 255)
-    ResizeHandle.ImageTransparency = 0.5 -- Make it more visible for now
-    ResizeHandle.ZIndex = 100
+   -- RESIZE CORNER CONTAINER (so it doesn't get clipped)
+local ResizeCorner = Instance.new("Frame", MainFrame)
+ResizeCorner.Size = UDim2.new(0, 26, 0, 26)
+ResizeCorner.Position = UDim2.new(1, -26, 1, -26)
+ResizeCorner.BackgroundTransparency = 1
+ResizeCorner.ZIndex = 100
+ResizeCorner.ClipsDescendants = false
+
+-- Resize Button
+local ResizeHandle = Instance.new("ImageButton", ResizeCorner)
+ResizeHandle.Name = "ResizeHandle"
+ResizeHandle.Size = UDim2.new(1, 0, 1, 0)
+ResizeHandle.BackgroundTransparency = 1
+ResizeHandle.Image = "rbxassetid://6031064368"
+ResizeHandle.ImageColor3 = self.Accent.Color
+ResizeHandle.ImageTransparency = 0.2
+ResizeHandle.ZIndex = 101
+
+-- Hover effect
+ResizeHandle.MouseEnter:Connect(function()
+    TweenService:Create(ResizeHandle, TweenInfo.new(0.2), {
+        ImageTransparency = 0,
+        Size = UDim2.new(1.1, 0, 1.1, 0)
+    }):Play()
+end)
+
+ResizeHandle.MouseLeave:Connect(function()
+    TweenService:Create(ResizeHandle, TweenInfo.new(0.2), {
+        ImageTransparency = 0.2,
+        Size = UDim2.new(1, 0, 1)
+    }):Play()
+end)
 
     -- Search Bar Logic
     local SearchFrame = Instance.new("Frame", MainFrame)
