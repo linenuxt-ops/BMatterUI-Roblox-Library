@@ -1,5 +1,5 @@
 local BMLibrary = {
-    Version = 2.2
+    Version = 2.3
 }
 
 local CoreGui = game:GetService("CoreGui")
@@ -40,7 +40,7 @@ function BMLibrary:CreateWindow(title)
     Main.Active = true
     Main.ClipsDescendants = true
 
-    -- Visible Resize Indicator (The Triangle)
+    -- Visible Resize Indicator
     local ResizeIcon = Instance.new("TextLabel", Main)
     ResizeIcon.Name = "ResizeIcon"
     ResizeIcon.BackgroundTransparency = 1
@@ -52,7 +52,7 @@ function BMLibrary:CreateWindow(title)
     ResizeIcon.TextSize = 16
     ResizeIcon.ZIndex = 5
 
-    -- Large Resize Handle (Hitbox)
+    -- Large Resize Handle Hitbox
     local ResizeHandle = Instance.new("TextButton", Main)
     ResizeHandle.Name = "ResizeHandle"
     ResizeHandle.Size = UDim2.new(0, 30, 0, 30)
@@ -73,14 +73,13 @@ function BMLibrary:CreateWindow(title)
     TitleLabel.TextSize = 14
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- Horizontal Gray Line
+    -- Decoration Lines
     local HorizontalLine = Instance.new("Frame", Main)
     HorizontalLine.Position = UDim2.new(0, 0, 0, 35)
     HorizontalLine.Size = UDim2.new(1, 0, 0, 1)
     HorizontalLine.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
     HorizontalLine.BorderSizePixel = 0
 
-    -- Vertical Gray Separator
     local VerticalLine = Instance.new("Frame", Main)
     VerticalLine.Position = UDim2.new(0, 120, 0, 36)
     VerticalLine.Size = UDim2.new(0, 1, 1, -36)
@@ -104,7 +103,7 @@ function BMLibrary:CreateWindow(title)
         Sidebar.CanvasSize = UDim2.new(0, 0, 0, SidebarLayout.AbsoluteContentSize.Y)
     end)
 
-    -- Pages Container
+    -- Page Container
     local PageFolder = Instance.new("Frame", Main)
     PageFolder.Name = "Pages"
     PageFolder.Position = UDim2.new(0, 130, 0, 45)
@@ -116,6 +115,7 @@ function BMLibrary:CreateWindow(title)
     local dragging = false
     local startPos, startSize, dragStart, startPosDrag
 
+    -- Cursor Logic
     ResizeHandle.MouseEnter:Connect(function() 
         Mouse.Icon = CURSOR_RESIZE 
         ResizeIcon.TextColor3 = Color3.fromRGB(180, 50, 255) 
@@ -130,6 +130,7 @@ function BMLibrary:CreateWindow(title)
     TitleLabel.MouseEnter:Connect(function() Mouse.Icon = CURSOR_DRAG end)
     TitleLabel.MouseLeave:Connect(function() if not dragging then Mouse.Icon = "" end end)
 
+    -- Interaction Handling
     ResizeHandle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             draggingSize = true
@@ -166,7 +167,7 @@ function BMLibrary:CreateWindow(title)
         end
     end)
 
-    -- TABS OBJECT
+    -- Main Tabs Interface
     local Tabs = { ActivePage = nil }
 
     function Tabs:CreateCategory(name)
@@ -209,13 +210,11 @@ function BMLibrary:CreateWindow(title)
         end
 
         TabBtn.MouseButton1Click:Connect(Switch)
-
-        if Tabs.ActivePage == nil then
-            Tabs.ActivePage = name
-            Switch()
-        end
+        if Tabs.ActivePage == nil then Tabs.ActivePage = name Switch() end
 
         local Elements = {}
+
+        -- RESTORED YOUR PREVIOUS BUTTON FUNCTION
         function Elements:CreateButton(text, callback)
             local Btn = Instance.new("TextButton", Page)
             Btn.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
@@ -224,7 +223,6 @@ function BMLibrary:CreateWindow(title)
             Btn.Text = text
             Btn.TextColor3 = Color3.fromRGB(200, 200, 200)
             Btn.TextSize = 13
-            Btn.BorderSizePixel = 0
             Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 4)
 
             local Stroke = Instance.new("UIStroke", Btn)
@@ -232,7 +230,6 @@ function BMLibrary:CreateWindow(title)
             Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
             Btn.MouseButton1Click:Connect(callback)
-            return Btn
         end
 
         return Elements
