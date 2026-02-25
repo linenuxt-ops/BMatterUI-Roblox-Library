@@ -1,5 +1,5 @@
 local BMLibrary = {
-    Version = 2.8
+    Version = 3.0
 }
 
 local CoreGui = game:GetService("CoreGui")
@@ -190,8 +190,9 @@ function BMLibrary:CreateWindow(title)
 
         local PageLayout = Instance.new("UIListLayout", Page)
         PageLayout.Padding = UDim.new(0, 6)
+        -- FIXED: Added extra offset to ensure Sliders at the bottom are visible
         PageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            Page.CanvasSize = UDim2.new(0, 0, 0, PageLayout.AbsoluteContentSize.Y)
+            Page.CanvasSize = UDim2.new(0, 0, 0, PageLayout.AbsoluteContentSize.Y + 20)
         end)
 
         local function Switch()
@@ -222,7 +223,10 @@ function BMLibrary:CreateWindow(title)
             Btn.TextSize = 13
             Btn.BorderSizePixel = 0
             Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 4)
-            Btn.MouseButton1Click:Connect(callback)
+            -- FIXED: Added nil check for callback
+            Btn.MouseButton1Click:Connect(function()
+                if callback then callback() end
+            end)
         end
 
         function Elements:CreateToggle(text, default, callback)
@@ -258,7 +262,8 @@ function BMLibrary:CreateWindow(title)
                 local targetCol = state and THEME_COLOR or TOGGLE_OFF
                 TweenService:Create(Inner, TweenInfo.new(0.2), {Position = targetPos}):Play()
                 TweenService:Create(Outer, TweenInfo.new(0.2), {BackgroundColor3 = targetCol}):Play()
-                callback(state)
+                -- FIXED: Added nil check for callback to prevent "attempt to call a nil value"
+                if callback then callback(state) end
             end
 
             Container.MouseButton1Click:Connect(function()
@@ -310,7 +315,8 @@ function BMLibrary:CreateWindow(title)
                 local val = math.floor(min + (max - min) * pos)
                 TweenService:Create(SliderFill, TweenInfo.new(0.1), {Size = UDim2.new(pos, 0, 1, 0)}):Play()
                 ValueLabel.Text = tostring(val)
-                callback(val)
+                -- FIXED: Added nil check for callback
+                if callback then callback(val) end
             end
 
             local sdragging = false
@@ -334,7 +340,8 @@ function BMLibrary:CreateWindow(title)
             end)
         end
 
-        function Elements:CreateTextbox(text, placeholder, callback)
+        -- RENAMED: Changed from CreateTextbox to CreateText
+        function Elements:CreateText(text, placeholder, callback)
             local BoxFrame = Instance.new("Frame", Page)
             BoxFrame.Size = UDim2.new(1, -5, 0, 35)
             BoxFrame.BackgroundTransparency = 1
@@ -377,7 +384,8 @@ function BMLibrary:CreateWindow(title)
             end)
             BoxContainer.FocusLost:Connect(function(enterPressed)
                 TweenService:Create(Stroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(45, 45, 50)}):Play()
-                callback(BoxContainer.Text)
+                -- FIXED: Added nil check for callback
+                if callback then callback(BoxContainer.Text) end
             end)
         end
 
