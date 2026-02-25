@@ -1,11 +1,10 @@
 local BMLibrary = {
-    Version = 1.5
+    Version = 1.6
 }
 
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 
--- Cleanup logic to kill previous versions
 local function ForceCleanup()
     for _, child in ipairs(CoreGui:GetChildren()) do
         if child.Name == "BMLibrary_Root" or child:GetAttribute("BMLib_Version") then
@@ -35,35 +34,38 @@ function BMLibrary:CreateWindow(title)
     Main.Active = true
     Main.Draggable = true
 
-    -- Purple/Pink Gradient Border (The Deck)
-    local Accent = Instance.new("Frame", Main)
-    Accent.Name = "Accent"
-    Accent.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Accent.BorderSizePixel = 0
-    Accent.Size = UDim2.new(1, 0, 0, 2)
-    
-    local Gradient = Instance.new("UIGradient", Accent)
-    Gradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(180, 50, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 200))
-    }
-
     -- Header Title
     local TitleLabel = Instance.new("TextLabel", Main)
     TitleLabel.BackgroundTransparency = 1
-    TitleLabel.Position = UDim2.new(0, 12, 0, 5)
-    TitleLabel.Size = UDim2.new(0, 200, 0, 30)
+    TitleLabel.Position = UDim2.new(0, 12, 0, 0)
+    TitleLabel.Size = UDim2.new(1, -24, 0, 35)
     TitleLabel.Font = Enum.Font.GothamBold
     TitleLabel.Text = title or "BMLibrary"
     TitleLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
     TitleLabel.TextSize = 14
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- Sidebar (Left side)
+    -- Horizontal Gray Line (Beneath Title)
+    local HorizontalLine = Instance.new("Frame", Main)
+    HorizontalLine.Name = "HorizontalLine"
+    HorizontalLine.Position = UDim2.new(0, 0, 0, 35)
+    HorizontalLine.Size = UDim2.new(1, 0, 0, 1)
+    HorizontalLine.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+    HorizontalLine.BorderSizePixel = 0
+
+    -- Vertical Gray Separator (Between Sidebar and Content)
+    local VerticalLine = Instance.new("Frame", Main)
+    VerticalLine.Name = "VerticalLine"
+    VerticalLine.Position = UDim2.new(0, 120, 0, 36)
+    VerticalLine.Size = UDim2.new(0, 1, 1, -36)
+    VerticalLine.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+    VerticalLine.BorderSizePixel = 0
+
+    -- Sidebar Container
     local Sidebar = Instance.new("ScrollingFrame", Main)
     Sidebar.Name = "Sidebar"
     Sidebar.Position = UDim2.new(0, 5, 0, 40)
-    Sidebar.Size = UDim2.new(0, 110, 1, -50)
+    Sidebar.Size = UDim2.new(0, 110, 1, -45)
     Sidebar.BackgroundTransparency = 1
     Sidebar.BorderSizePixel = 0
     Sidebar.ScrollBarThickness = 0
@@ -72,25 +74,15 @@ function BMLibrary:CreateWindow(title)
     local SidebarLayout = Instance.new("UIListLayout", Sidebar)
     SidebarLayout.Padding = UDim.new(0, 5)
     SidebarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    
-    -- Auto-resize Sidebar Canvas
     SidebarLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         Sidebar.CanvasSize = UDim2.new(0, 0, 0, SidebarLayout.AbsoluteContentSize.Y)
     end)
 
-    -- Gray Vertical Separator
-    local Separator = Instance.new("Frame", Main)
-    Separator.Name = "Separator"
-    Separator.Position = UDim2.new(0, 120, 0, 40)
-    Separator.Size = UDim2.new(0, 1, 1, -50)
-    Separator.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
-    Separator.BorderSizePixel = 0
-
     -- Pages Container
     local PageFolder = Instance.new("Frame", Main)
     PageFolder.Name = "Pages"
-    PageFolder.Position = UDim2.new(0, 130, 0, 40)
-    PageFolder.Size = UDim2.new(1, -140, 1, -50)
+    PageFolder.Position = UDim2.new(0, 130, 0, 45)
+    PageFolder.Size = UDim2.new(1, -140, 1, -55)
     PageFolder.BackgroundTransparency = 1
 
     local Tabs = { ActivePage = nil }
@@ -107,7 +99,7 @@ function BMLibrary:CreateWindow(title)
         TabBtn.BorderSizePixel = 0
         Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 4)
 
-        -- The Content Page
+        -- Page Content
         local Page = Instance.new("ScrollingFrame", PageFolder)
         Page.Name = name .. "_Page"
         Page.Size = UDim2.new(1, 0, 1, 0)
@@ -119,8 +111,6 @@ function BMLibrary:CreateWindow(title)
 
         local PageLayout = Instance.new("UIListLayout", Page)
         PageLayout.Padding = UDim.new(0, 6)
-        
-        -- Auto-resize Page Canvas
         PageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
             Page.CanvasSize = UDim2.new(0, 0, 0, PageLayout.AbsoluteContentSize.Y)
         end)
@@ -140,7 +130,6 @@ function BMLibrary:CreateWindow(title)
 
         TabBtn.MouseButton1Click:Connect(Switch)
 
-        -- Load first tab automatically
         if Tabs.ActivePage == nil then
             Tabs.ActivePage = name
             Switch()
@@ -151,18 +140,16 @@ function BMLibrary:CreateWindow(title)
         function Elements:CreateButton(text, callback)
             local Btn = Instance.new("TextButton", Page)
             Btn.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-            Btn.BorderSizePixel = 0
             Btn.Size = UDim2.new(1, -5, 0, 32)
             Btn.Font = Enum.Font.GothamSemibold
             Btn.Text = text
             Btn.TextColor3 = Color3.fromRGB(200, 200, 200)
             Btn.TextSize = 13
-            Btn.AutoButtonColor = false
+            Btn.BorderSizePixel = 0
             Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 4)
 
             local Stroke = Instance.new("UIStroke", Btn)
             Stroke.Color = Color3.fromRGB(100, 40, 100)
-            Stroke.Thickness = 1
             Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
             Btn.MouseEnter:Connect(function()
@@ -175,9 +162,7 @@ function BMLibrary:CreateWindow(title)
                 TweenService:Create(Stroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(100, 40, 100)}):Play()
             end)
 
-            Btn.MouseButton1Click:Connect(function()
-                if callback then callback() end
-            end)
+            Btn.MouseButton1Click:Connect(callback)
         end
 
         return Elements
