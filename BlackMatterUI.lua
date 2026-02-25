@@ -1,9 +1,11 @@
 local BMLibrary = {
-    Version = 1.6
+    Version = 1.7
 }
 
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local Mouse = game:GetService("Players").LocalPlayer:GetMouse()
 
 local function ForceCleanup()
     for _, child in ipairs(CoreGui:GetChildren()) do
@@ -32,7 +34,15 @@ function BMLibrary:CreateWindow(title)
     Main.Position = UDim2.new(0.5, -225, 0.5, -150)
     Main.Size = UDim2.new(0, 450, 0, 300)
     Main.Active = true
-    Main.Draggable = true
+    Main.ClipsDescendants = true
+
+    -- Resize Handle (Bottom Right)
+    local ResizeHandle = Instance.new("Frame", Main)
+    ResizeHandle.Name = "ResizeHandle"
+    ResizeHandle.Size = UDim2.new(0, 15, 0, 15)
+    ResizeHandle.Position = UDim2.new(1, -15, 1, -15)
+    ResizeHandle.BackgroundTransparency = 1
+    ResizeHandle.ZIndex = 10
 
     -- Header Title
     local TitleLabel = Instance.new("TextLabel", Main)
@@ -45,7 +55,7 @@ function BMLibrary:CreateWindow(title)
     TitleLabel.TextSize = 14
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- Horizontal Gray Line (Beneath Title)
+    -- Horizontal Gray Line
     local HorizontalLine = Instance.new("Frame", Main)
     HorizontalLine.Name = "HorizontalLine"
     HorizontalLine.Position = UDim2.new(0, 0, 0, 35)
@@ -53,7 +63,7 @@ function BMLibrary:CreateWindow(title)
     HorizontalLine.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
     HorizontalLine.BorderSizePixel = 0
 
-    -- Vertical Gray Separator (Between Sidebar and Content)
+    -- Vertical Gray Separator
     local VerticalLine = Instance.new("Frame", Main)
     VerticalLine.Name = "VerticalLine"
     VerticalLine.Position = UDim2.new(0, 120, 0, 36)
@@ -61,7 +71,7 @@ function BMLibrary:CreateWindow(title)
     VerticalLine.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
     VerticalLine.BorderSizePixel = 0
 
-    -- Sidebar Container
+    -- Sidebar
     local Sidebar = Instance.new("ScrollingFrame", Main)
     Sidebar.Name = "Sidebar"
     Sidebar.Position = UDim2.new(0, 5, 0, 40)
@@ -69,37 +79,82 @@ function BMLibrary:CreateWindow(title)
     Sidebar.BackgroundTransparency = 1
     Sidebar.BorderSizePixel = 0
     Sidebar.ScrollBarThickness = 0
-    Sidebar.CanvasSize = UDim2.new(0, 0, 0, 0)
 
     local SidebarLayout = Instance.new("UIListLayout", Sidebar)
     SidebarLayout.Padding = UDim.new(0, 5)
     SidebarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    SidebarLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        Sidebar.CanvasSize = UDim2.new(0, 0, 0, SidebarLayout.AbsoluteContentSize.Y)
-    end)
 
-    -- Pages Container
+    -- Pages
     local PageFolder = Instance.new("Frame", Main)
     PageFolder.Name = "Pages"
     PageFolder.Position = UDim2.new(0, 130, 0, 45)
     PageFolder.Size = UDim2.new(1, -140, 1, -55)
     PageFolder.BackgroundTransparency = 1
 
+    -- [RESIZING LOGIC]
+    local draggingSize = false
+    local startPos, startSize
+
+    ResizeHandle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            draggingSize = true
+            startPos = input.Position
+            startSize = Main.Size
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if draggingSize and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - startPos
+            local newWidth = math.max(300, startSize.X.Offset + delta.X)
+            local newHeight = math.max(200, startSize.Y.Offset + delta.Y)
+            Main.Size = UDim2.new(0, newWidth, 0, newHeight)
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            draggingSize = false
+        end
+    end)
+
+    -- [DRAGGING LOGIC]
+    local dragging = false
+    local dragInput, dragStart, startPosDrag
+
+    TitleLabel.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPosDrag = Main.Position
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            Main.Position = UDim2.new(startPosDrag.X.Scale, startPosDrag.X.Offset + delta.X, startPosDrag.Y.Scale, startPosDrag.Y.Offset + delta.Y)
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+
     local Tabs = { ActivePage = nil }
 
     function Tabs:CreateCategory(name)
-        -- Sidebar Button
         local TabBtn = Instance.new("TextButton", Sidebar)
         TabBtn.Size = UDim2.new(1, -5, 0, 30)
         TabBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-        TabBtn.Font = Enum.Font.GothamSemibold
         TabBtn.Text = name
         TabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+        TabBtn.Font = Enum.Font.GothamSemibold
         TabBtn.TextSize = 12
-        TabBtn.BorderSizePixel = 0
         Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 4)
 
-        -- Page Content
         local Page = Instance.new("ScrollingFrame", PageFolder)
         Page.Name = name .. "_Page"
         Page.Size = UDim2.new(1, 0, 1, 0)
@@ -145,22 +200,11 @@ function BMLibrary:CreateWindow(title)
             Btn.Text = text
             Btn.TextColor3 = Color3.fromRGB(200, 200, 200)
             Btn.TextSize = 13
-            Btn.BorderSizePixel = 0
             Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 4)
 
             local Stroke = Instance.new("UIStroke", Btn)
             Stroke.Color = Color3.fromRGB(100, 40, 100)
             Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-
-            Btn.MouseEnter:Connect(function()
-                TweenService:Create(Btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 40, 55)}):Play()
-                TweenService:Create(Stroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(255, 80, 200)}):Play()
-            end)
-            
-            Btn.MouseLeave:Connect(function()
-                TweenService:Create(Btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(30, 30, 35)}):Play()
-                TweenService:Create(Stroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(100, 40, 100)}):Play()
-            end)
 
             Btn.MouseButton1Click:Connect(callback)
         end
