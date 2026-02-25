@@ -1,5 +1,5 @@
 local BMLibrary = {
-    Version = 2.6
+    Version = 2.8
 }
 
 local CoreGui = game:GetService("CoreGui")
@@ -331,6 +331,53 @@ function BMLibrary:CreateWindow(title)
                 if sdragging and input.UserInputType == Enum.UserInputType.MouseMovement then
                     Update(input)
                 end
+            end)
+        end
+
+        function Elements:CreateTextbox(text, placeholder, callback)
+            local BoxFrame = Instance.new("Frame", Page)
+            BoxFrame.Size = UDim2.new(1, -5, 0, 35)
+            BoxFrame.BackgroundTransparency = 1
+
+            local Label = Instance.new("TextLabel", BoxFrame)
+            Label.Size = UDim2.new(0.4, 0, 1, 0)
+            Label.BackgroundTransparency = 1
+            Label.Text = text
+            Label.TextColor3 = Color3.new(1, 1, 1)
+            Label.Font = Enum.Font.GothamSemibold
+            Label.TextSize = 13
+            Label.TextXAlignment = Enum.TextXAlignment.Left
+
+            local BoxContainer = Instance.new("TextBox", BoxFrame)
+            BoxContainer.Size = UDim2.new(0.55, 0, 0, 30)
+            BoxContainer.Position = UDim2.new(1, -5, 0.5, 0)
+            BoxContainer.AnchorPoint = Vector2.new(1, 0.5)
+            BoxContainer.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+            BoxContainer.BorderSizePixel = 0
+            BoxContainer.Text = ""
+            BoxContainer.PlaceholderText = placeholder or "Type here..."
+            BoxContainer.PlaceholderColor3 = Color3.fromRGB(100, 100, 100)
+            BoxContainer.TextColor3 = Color3.new(1, 1, 1)
+            BoxContainer.Font = Enum.Font.GothamSemibold
+            BoxContainer.TextSize = 12
+            BoxContainer.ClipsDescendants = true
+
+            local Corner = Instance.new("UICorner", BoxContainer)
+            Corner.CornerRadius = UDim.new(0, 4)
+
+            local Stroke = Instance.new("UIStroke", BoxContainer)
+            Stroke.Thickness = 1
+            Stroke.Color = Color3.fromRGB(45, 45, 50)
+            Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+            Stroke.Transparency = 0
+
+            -- Focus Effects
+            BoxContainer.Focused:Connect(function()
+                TweenService:Create(Stroke, TweenInfo.new(0.2), {Color = THEME_COLOR}):Play()
+            end)
+            BoxContainer.FocusLost:Connect(function(enterPressed)
+                TweenService:Create(Stroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(45, 45, 50)}):Play()
+                callback(BoxContainer.Text)
             end)
         end
 
