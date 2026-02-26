@@ -35,49 +35,18 @@ function BMLibrary:CreateWindow(title)
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     ScreenGui:SetAttribute("BMLib_Version", self.Version)
 
-    -- Main Window (Now a CanvasGroup for smooth fading)
-    local Main = Instance.new("CanvasGroup", ScreenGui)
+    -- Main Window (Starts at Size 0 for Animation)
+    local Main = Instance.new("Frame", ScreenGui)
     Main.Name = "Main"
     Main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
     Main.BorderSizePixel = 0
-    -- Start slightly lower and invisible
-    local FinalPos = UDim2.new(0.5, -225, 0.5, -150)
-    Main.Position = UDim2.new(0.5, -225, 0.5, -100) 
-    Main.Size = UDim2.new(0, 450, 0, 300)
+    Main.Position = UDim2.new(0.5, 0, 0.5, 0) -- Centered start
+    Main.Size = UDim2.new(0, 0, 0, 0) -- Initial size 0
     Main.Active = true
     Main.ClipsDescendants = true
-    Main.GroupTransparency = 1 -- Start hidden
-
-    local function PlayIntro()
-        -- 1. Create a temporary "Welcome" label for the tour feel
-        local WelcomeLabel = Instance.new("TextLabel", Main)
-        WelcomeLabel.Size = UDim2.new(1, 0, 1, 0)
-        WelcomeLabel.BackgroundTransparency = 1
-        WelcomeLabel.Font = Enum.Font.GothamBold
-        WelcomeLabel.Text = "Welcome to " .. (title or "BMLibrary")
-        WelcomeLabel.TextColor3 = THEME_COLOR
-        WelcomeLabel.TextSize = 24
-        WelcomeLabel.ZIndex = 100
-        WelcomeLabel.TextTransparency = 1
-
-        -- 2. Fade Window In & Slide Up
-        TweenService:Create(Main, TweenInfo.new(0.8, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-            Position = FinalPos,
-            GroupTransparency = 0
-        }):Play()
-
-        -- 3. Quick Text Reveal
-        TweenService:Create(WelcomeLabel, TweenInfo.new(0.5), {TextTransparency = 0}):Play()
-        
-        task.delay(1.2, function()
-            TweenService:Create(WelcomeLabel, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
-            task.wait(0.5)
-            WelcomeLabel:Destroy()
-        end)
-    end
-
-    -- Run the intro
-    task.spawn(PlayIntro)
+    
+    local MainCorner = Instance.new("UICorner", Main)
+    MainCorner.CornerRadius = UDim.new(0, 6)
 
     -- Resize Icon
     local ResizeIcon = Instance.new("TextLabel", Main)
@@ -144,7 +113,20 @@ function BMLibrary:CreateWindow(title)
     PageFolder.Size = UDim2.new(1, -140, 1, -55)
     PageFolder.BackgroundTransparency = 1
 
-    -- Logic
+    --------------------------------------------------------
+    -- SCALE INTRO ANIMATION
+    --------------------------------------------------------
+    local TargetSize = UDim2.new(0, 450, 0, 300)
+    local TargetPos = UDim2.new(0.5, -225, 0.5, -150)
+
+    TweenService:Create(Main, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Size = TargetSize,
+        Position = TargetPos
+    }):Play()
+
+    --------------------------------------------------------
+    -- WINDOW LOGIC (DRAG & RESIZE)
+    --------------------------------------------------------
     local draggingSize, dragging = false, false
     local startPos, startSize, dragStart, startPosDrag
 
@@ -181,12 +163,14 @@ function BMLibrary:CreateWindow(title)
 
     UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            draggingSize = false
-            dragging = false
+            draggingSize, dragging = false, false
             Mouse.Icon = ""
         end
     end)
 
+    --------------------------------------------------------
+    -- TABS & ELEMENTS
+    --------------------------------------------------------
     local Tabs = { ActivePage = nil }
 
     function Tabs:CreateCategory(name)
@@ -244,109 +228,6 @@ function BMLibrary:CreateWindow(title)
                 Label.TextXAlignment = Enum.TextXAlignment.Left
             end
         end
-
-        function Elements:CreateInput(text, placeholder, callback)
-            local Container = Instance.new("Frame", Page)
-            Container.Size, Container.BackgroundTransparency = UDim2.new(1, -5, 0, 32), 1
-            
-            local Label = Instance.new("TextLabel", Container)
-            Label.Size = UDim2.new(0.4, 0, 1, 0)
-            Label.BackgroundTransparency = 1
-            Label.Text = text
-            Label.TextColor3 = Color3.new(1, 1, 1)
-            Label.Font, Label.TextSize, Label.TextXAlignment = Enum.Font.GothamSemibold, 13, Enum.TextXAlignment.Left
-
-            local BoxContainer = Instance.new("Frame", Container)
-            BoxContainer.Size = UDim2.new(0.55, 0, 0, 28)
-            BoxContainer.Position = UDim2.new(1, 0, 0.5, 0)
-            BoxContainer.AnchorPoint = Vector2.new(1, 0.5)
-            BoxContainer.BackgroundColor3 = ELEMENT_BG
-            Instance.new("UICorner", BoxContainer).CornerRadius = UDim.new(0, 4)
-            
-            local Stroke = Instance.new("UIStroke", BoxContainer)
-            Stroke.Thickness, Stroke.Color, Stroke.ApplyStrokeMode = 1, Color3.fromRGB(45, 45, 50), Enum.ApplyStrokeMode.Border
-
-            local Box = Instance.new("TextBox", BoxContainer)
-            Box.Size = UDim2.new(1, -10, 1, 0)
-            Box.Position = UDim2.new(0, 5, 0, 0)
-            Box.BackgroundTransparency = 1
-            Box.Text, Box.PlaceholderText = "", placeholder or "..."
-            Box.TextColor3, Box.Font, Box.TextSize = Color3.new(1, 1, 1), Enum.Font.GothamSemibold, 12
-            Box.ClearTextOnFocus = false
-
-            Box.Focused:Connect(function() TweenService:Create(Stroke, TweenInfo.new(0.2), {Color = THEME_COLOR}):Play() end)
-            Box.FocusLost:Connect(function() 
-                TweenService:Create(Stroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(45, 45, 50)}):Play() 
-                if callback then callback(Box.Text) end 
-            end)
-        end
-
-       function Elements:CreateCheckbox(text, default, callback)
-    local state = default or false
-    local Container = Instance.new("TextButton", Page)
-    Container.Size = UDim2.new(1, -5, 0, 32) -- Full height to prevent overlapping
-    Container.BackgroundTransparency = 1
-    Container.Text = ""
-    
-    local Label = Instance.new("TextLabel", Container)
-    Label.Size = UDim2.new(1, -35, 1, 0)
-    Label.BackgroundTransparency = 1
-    Label.Text = text
-    Label.TextColor3 = Color3.new(1,1,1)
-    Label.Font = Enum.Font.GothamSemibold
-    Label.TextSize = 13
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    
-    local Box = Instance.new("Frame", Container)
-    Box.Size = UDim2.new(0, 20, 0, 20)
-    Box.Position = UDim2.new(1, -22, 0.5, -10)
-    Box.BackgroundColor3 = ELEMENT_BG
-    Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 4)
-    
-    local Stroke = Instance.new("UIStroke", Box)
-    Stroke.Thickness = 1
-    Stroke.Color = Color3.fromRGB(60, 60, 65)
-
-    local CheckMark = Instance.new("TextLabel", Box)
-    CheckMark.Size = UDim2.new(1, 0, 1, 0)
-    CheckMark.BackgroundTransparency = 1
-    CheckMark.Text = "✓"
-    CheckMark.TextColor3 = THEME_COLOR
-    CheckMark.Font = Enum.Font.GothamBold
-    CheckMark.TextSize = 14
-    CheckMark.TextTransparency = state and 0 or 1
-    CheckMark.Rotation = state and 0 or -45 -- Initial rotation for animation
-
-    local function Update()
-        -- Pop Animation
-        Box.Size = UDim2.new(0, 16, 0, 16) -- Shrink
-        TweenService:Create(Box, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Size = UDim2.new(0, 20, 0, 20)}):Play() -- Pop back
-        
-        -- Checkmark Animation
-        local targetTransparency = state and 0 or 1
-        local targetRotation = state and 0 or -45
-        
-        TweenService:Create(CheckMark, TweenInfo.new(0.2), {
-            TextTransparency = targetTransparency,
-            Rotation = targetRotation
-        }):Play()
-        
-        TweenService:Create(Stroke, TweenInfo.new(0.2), {
-            Color = state and THEME_COLOR or Color3.fromRGB(60, 60, 65)
-        }):Play()
-
-        if callback then callback(state) end
-    end
-
-    Container.MouseButton1Click:Connect(function()
-        state = not state
-        Update()
-    end)
-    
-    -- Set initial state without running full animation instantly
-    CheckMark.TextTransparency = state and 0 or 1
-    Stroke.Color = state and THEME_COLOR or Color3.fromRGB(60, 60, 65)
-end
 
         function Elements:CreateButton(text, callback)
             local Btn = Instance.new("TextButton", Page)
