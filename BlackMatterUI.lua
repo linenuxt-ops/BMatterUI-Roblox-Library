@@ -424,6 +424,143 @@ function BMLibrary:CreateWindow(title)
             CLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() Container.Size = UDim2.new(1, -5, 0, CLayout.AbsoluteContentSize.Y) end)
         end
 
+        function Elements:CreateColorPicker(text, default, callback)
+            local h, s, v = default:ToHSV()
+            local PickingColor = false
+
+            local PickerFrame = Instance.new("Frame", Page)
+            PickerFrame.Size, PickerFrame.BackgroundTransparency = UDim2.new(1, -5, 0, 35), 1
+            
+            local Label = Instance.new("TextLabel", PickerFrame)
+            Label.Size, Label.BackgroundTransparency = UDim2.new(1, -45, 1, 0), 1
+            Label.Text, Label.TextColor3, Label.Font, Label.TextSize, Label.TextXAlignment = text, Color3.new(1,1,1), Enum.Font.GothamSemibold, 13, Enum.TextXAlignment.Left
+            
+            local ColorBox = Instance.new("TextButton", PickerFrame)
+            ColorBox.Size, ColorBox.Position = UDim2.new(0, 35, 0, 25), UDim2.new(1, -35, 0.5, -12)
+            ColorBox.BackgroundColor3 = default
+            ColorBox.Text = ""
+            Instance.new("UICorner", ColorBox).CornerRadius = UDim.new(0, 4)
+            local BoxStroke = Instance.new("UIStroke", ColorBox)
+            BoxStroke.Thickness, BoxStroke.Color = 1.5, Color3.new(1,1,1)
+
+            -- Popup (Parented to Main window for layering)
+            local Popup = Instance.new("Frame", Main)
+            Popup.Name = "ColorPopup"
+            Popup.Size, Popup.Visible, Popup.BackgroundColor3, Popup.Active, Popup.ZIndex = UDim2.new(0, 260, 0, 170), false, Color3.fromRGB(25, 25, 30), true, 500
+            Instance.new("UICorner", Popup).CornerRadius = UDim.new(0, 8)
+            local PopStroke = Instance.new("UIStroke", Popup)
+            PopStroke.Thickness, PopStroke.Color = 1, Color3.fromRGB(60, 60, 65)
+
+            local HueBar = Instance.new("Frame", Popup)
+            HueBar.Size, HueBar.Position, HueBar.ZIndex = UDim2.new(0, 15, 0, 130), UDim2.new(0, 12, 0, 20), 501
+            local HueGrad = Instance.new("UIGradient", HueBar)
+            HueGrad.Rotation = 90
+            HueGrad.Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.new(1,0,0)), 
+                ColorSequenceKeypoint.new(0.17, Color3.new(1,1,0)), 
+                ColorSequenceKeypoint.new(0.33, Color3.new(0,1,0)), 
+                ColorSequenceKeypoint.new(0.5, Color3.new(0,1,1)), 
+                ColorSequenceKeypoint.new(0.67, Color3.new(0,0,1)), 
+                ColorSequenceKeypoint.new(0.83, Color3.new(1,0,1)), 
+                ColorSequenceKeypoint.new(1, Color3.new(1,0,0))
+            })
+            Instance.new("UICorner", HueBar).CornerRadius = UDim.new(0, 4)
+
+            local SV = Instance.new("ImageLabel", Popup)
+            SV.Size, SV.Position, SV.ZIndex, SV.Image, SV.BackgroundColor3 = UDim2.new(0, 110, 0, 130), UDim2.new(0, 35, 0, 20), 501, "rbxassetid://4155801252", Color3.fromHSV(h, 1, 1)
+            Instance.new("UICorner", SV).CornerRadius = UDim.new(0, 4)
+
+            local Cursor = Instance.new("Frame", SV)
+            Cursor.Size, Cursor.AnchorPoint, Cursor.ZIndex, Cursor.BackgroundColor3, Cursor.Position = UDim2.new(0, 8, 0, 8), Vector2.new(0.5, 0.5), 502, Color3.new(1,1,1), UDim2.new(s, 0, 1-v, 0)
+            Instance.new("UICorner", Cursor).CornerRadius = UDim.new(1, 0)
+            local CursorStroke = Instance.new("UIStroke", Cursor)
+            CursorStroke.Thickness, CursorStroke.Color = 1, Color3.new(0,0,0)
+
+            local HexInput = Instance.new("TextBox", Popup)
+            HexInput.Size, HexInput.Position, HexInput.ZIndex = UDim2.new(0, 85, 0, 28), UDim2.new(0, 160, 0, 20), 501
+            HexInput.BackgroundColor3, HexInput.TextColor3, HexInput.Font, HexInput.TextSize = Color3.fromRGB(40, 40, 45), Color3.new(1,1,1), Enum.Font.GothamSemibold, 11
+            HexInput.PlaceholderText = "#FFFFFF"
+            HexInput.Text = "#" .. default:ToHex():upper()
+            Instance.new("UICorner", HexInput).CornerRadius = UDim.new(0, 4)
+
+            local R_T = Instance.new("TextLabel", Popup)
+            R_T.Size, R_T.Position, R_T.ZIndex, R_T.BackgroundTransparency = UDim2.new(0, 80, 0, 20), UDim2.new(0, 165, 0, 55), 501, 1
+            R_T.TextColor3, R_T.Font, R_T.TextSize, R_T.TextXAlignment = Color3.fromRGB(200, 200, 200), Enum.Font.GothamSemibold, 12, Enum.TextXAlignment.Left
+            
+            local G_T = R_T:Clone(); G_T.Parent = Popup; G_T.Position = UDim2.new(0, 165, 0, 75)
+            local B_T = R_T:Clone(); B_T.Parent = Popup; B_T.Position = UDim2.new(0, 165, 0, 95)
+
+            local function Update(skipHex)
+                local color = Color3.fromHSV(h, s, v)
+                ColorBox.BackgroundColor3 = color
+                SV.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
+                R_T.Text = "R: " .. math.floor(color.R * 255)
+                G_T.Text = "G: " .. math.floor(color.G * 255)
+                B_T.Text = "B: " .. math.floor(color.B * 255)
+                if not skipHex then HexInput.Text = "#" .. color:ToHex():upper() end
+                if callback then callback(color) end
+            end
+
+            HexInput.FocusLost:Connect(function()
+                local text = HexInput.Text:gsub("#", "")
+                local success, result = pcall(function() return Color3.fromHex(text) end)
+                if success and result then
+                    h, s, v = result:ToHSV()
+                    Cursor.Position = UDim2.new(s, 0, 1-v, 0)
+                    Update(false)
+                end
+            end)
+
+            local dH, dSV = false, false
+            HueBar.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dH = true end end)
+            SV.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dSV = true end end)
+            
+            UserInputService.InputChanged:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseMovement then
+                    if dH then 
+                        h = 1 - math.clamp((input.Position.Y - HueBar.AbsolutePosition.Y) / HueBar.AbsoluteSize.Y, 0, 1) 
+                        Update()
+                    elseif dSV then 
+                        s = math.clamp((input.Position.X - SV.AbsolutePosition.X) / SV.AbsoluteSize.X, 0, 1) 
+                        v = 1 - math.clamp((input.Position.Y - SV.AbsolutePosition.Y) / SV.AbsoluteSize.Y, 0, 1) 
+                        Cursor.Position = UDim2.new(s, 0, 1-v, 0) 
+                        Update() 
+                    end
+                end
+            end)
+            
+            UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dH, dSV = false, false end end)
+
+            ColorBox.MouseButton1Click:Connect(function()
+                if not Popup.Visible then
+                    local rx, ry = ColorBox.AbsolutePosition.X - Main.AbsolutePosition.X, ColorBox.AbsolutePosition.Y - Main.AbsolutePosition.Y
+                    Popup.Position = UDim2.new(0, rx - 270, 0, ry)
+                    Popup.Visible = true
+                else
+                    Popup.Visible = false
+                end
+            end)
+
+            UserInputService.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 and Popup.Visible then
+                    local mPos = UserInputService:GetMouseLocation()
+                    local pPos, pSize = Popup.AbsolutePosition, Popup.AbsoluteSize
+                    -- Offset for Topbar height (36px)
+                    local adjustedY = mPos.Y - 36
+                    
+                    local inPopup = (mPos.X >= pPos.X and mPos.X <= pPos.X + pSize.X and adjustedY >= pPos.Y and adjustedY <= pPos.Y + pSize.Y)
+                    local bPos, bSize = ColorBox.AbsolutePosition, ColorBox.AbsoluteSize
+                    local inButton = (mPos.X >= bPos.X and mPos.X <= bPos.X + bSize.X and adjustedY >= bPos.Y and adjustedY <= bPos.Y + bSize.Y)
+                    
+                    if not inPopup and not inButton then
+                        Popup.Visible = false
+                    end
+                end
+            end)
+
+            Update()
+        end
+
         return Elements
     end
 
