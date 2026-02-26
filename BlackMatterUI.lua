@@ -1,96 +1,97 @@
 local BMLibrary = {
-    Version = 3.6
+    Version = 3.5
 }
 
--- Services
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local Players = game:GetService("Players")
-local Mouse = Players.LocalPlayer:GetMouse()
+local Mouse = game:GetService("Players").LocalPlayer:GetMouse()
 
--- Theme Defaults
+-- Theme Colors
 local THEME_COLOR = Color3.fromRGB(180, 50, 255) 
 local TOGGLE_OFF = Color3.fromRGB(45, 45, 45)
 local SLIDER_BG = Color3.fromRGB(45, 45, 45)
 local ELEMENT_BG = Color3.fromRGB(30, 30, 35)
 
--- Utility: Cleanup existing GUIs
+-- Standard Cursor Assets
+local CURSOR_RESIZE = "rbxassetid://13404403816"
+
 local function ForceCleanup()
-    local existing = CoreGui:FindFirstChild("BMLibrary_Root")
-    if existing then existing:Destroy() end
-end
-
--- Dialog System (Requirement: onClick syntax)
-local function showDialog(title, content, canClose)
-    local root = CoreGui:FindFirstChild("BMLibrary_Root")
-    if not root then return end
-    
-    local Overlay = Instance.new("TextButton", root)
-    Overlay.Size = UDim2.new(1, 0, 1, 0)
-    Overlay.BackgroundColor3 = Color3.new(0, 0, 0)
-    Overlay.BackgroundTransparency = 0.5
-    Overlay.Text = ""
-    Overlay.AutoButtonColor = false
-
-    local Dialog = Instance.new("Frame", Overlay)
-    Dialog.Size = UDim2.new(0, 280, 0, 150)
-    Dialog.Position = UDim2.new(0.5, 0, 0.5, 0)
-    Dialog.AnchorPoint = Vector2.new(0.5, 0.5)
-    Dialog.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-    Instance.new("UICorner", Dialog)
-    
-    local T = Instance.new("TextLabel", Dialog)
-    T.Text = title
-    T.Size = UDim2.new(1, 0, 0, 40)
-    T.TextColor3 = Color3.new(1, 1, 1)
-    T.Font = Enum.Font.GothamBold
-    T.BackgroundTransparency = 1
-
-    local C = Instance.new("TextLabel", Dialog)
-    C.Text = typeof(content) == "string" and content or "Action Required"
-    C.Position = UDim2.new(0, 15, 0, 45)
-    C.Size = UDim2.new(1, -30, 0, 60)
-    C.TextColor3 = Color3.fromRGB(200, 200, 200)
-    C.Font = Enum.Font.Gotham
-    C.TextWrapped = true
-    C.BackgroundTransparency = 1
-
-    if not canClose then
-        -- Optional: Logic to keep dialog open until a process finishes
-    else
-        Overlay.MouseButton1Click:Connect(function() Overlay:Destroy() end)
+    for _, child in ipairs(CoreGui:GetChildren()) do
+        if child.Name == "BMLibrary_Root" then
+            child:Destroy()
+        end
     end
 end
 
--- Main Window
-function BMLibrary:CreateWindow(title, customSize)
+function BMLibrary:CreateWindow(title)
     ForceCleanup()
     
-    local ScreenGui = Instance.new("ScreenGui", CoreGui)
+    local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "BMLibrary_Root"
+    ScreenGui.Parent = CoreGui
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
+    -- Main Window
     local Main = Instance.new("Frame", ScreenGui)
+    Main.Name = "Main"
     Main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+    Main.BorderSizePixel = 0
     Main.Position = UDim2.new(0.5, 0, 0.5, 0)
     Main.AnchorPoint = Vector2.new(0.5, 0.5)
-    Main.Size = customSize or UDim2.new(0, 450, 0, 300)
-    Main.BorderSizePixel = 0
+    Main.Size = UDim2.new(0, 0, 0, 0) 
+    Main.Active = true
     Main.ClipsDescendants = true
-    Instance.new("UICorner", Main)
+    Main.BackgroundTransparency = 1
 
-    -- Header / Drag Handle
+    -- Intro Animation
+    TweenService:Create(Main, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Size = UDim2.new(0, 450, 0, 300),
+        BackgroundTransparency = 0
+    }):Play()
+
+    -- Resize Icon
+    local ResizeIcon = Instance.new("TextLabel", Main)
+    ResizeIcon.BackgroundTransparency = 1
+    ResizeIcon.Position = UDim2.new(1, -15, 1, -15)
+    ResizeIcon.Size = UDim2.new(0, 15, 0, 15)
+    ResizeIcon.Font = Enum.Font.GothamBold
+    ResizeIcon.Text = "◢" 
+    ResizeIcon.TextColor3 = Color3.fromRGB(80, 40, 110)
+    ResizeIcon.TextSize = 16
+    ResizeIcon.ZIndex = 5
+
+    local ResizeHandle = Instance.new("TextButton", Main)
+    ResizeHandle.Size = UDim2.new(0, 30, 0, 30)
+    ResizeHandle.Position = UDim2.new(1, -30, 1, -30)
+    ResizeHandle.BackgroundTransparency = 1
+    ResizeHandle.Text = ""
+    ResizeHandle.ZIndex = 100
+
+    -- Header Title (Drag Handle)
     local TitleLabel = Instance.new("TextButton", Main)
     TitleLabel.Name = "TitleHandle"
-    TitleLabel.Size = UDim2.new(1, 0, 0, 35)
     TitleLabel.BackgroundTransparency = 1
+    TitleLabel.Size = UDim2.new(1, 0, 0, 35)
+    TitleLabel.Font = Enum.Font.GothamBold
     TitleLabel.Text = "    " .. (title or "BMLibrary")
     TitleLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-    TitleLabel.Font = Enum.Font.GothamBold
+    TitleLabel.TextSize = 14
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- Search Bar
+    local HorizontalLine = Instance.new("Frame", Main)
+    HorizontalLine.Position = UDim2.new(0, 0, 0, 35)
+    HorizontalLine.Size = UDim2.new(1, 0, 0, 1)
+    HorizontalLine.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+    HorizontalLine.BorderSizePixel = 0
+
+    local VerticalLine = Instance.new("Frame", Main)
+    VerticalLine.Position = UDim2.new(0, 120, 0, 36)
+    VerticalLine.Size = UDim2.new(0, 1, 1, -36)
+    VerticalLine.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+    VerticalLine.BorderSizePixel = 0
+
+    -- Sidebar Search
     local SearchContainer = Instance.new("Frame", Main)
     SearchContainer.Position = UDim2.new(0, 5, 0, 40)
     SearchContainer.Size = UDim2.new(0, 110, 0, 25)
@@ -108,43 +109,79 @@ function BMLibrary:CreateWindow(title, customSize)
     SearchInput.TextSize = 11
     SearchInput.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- Sidebar & Page Folder
+    -- Sidebar
     local Sidebar = Instance.new("ScrollingFrame", Main)
     Sidebar.Position = UDim2.new(0, 5, 0, 70)
     Sidebar.Size = UDim2.new(0, 110, 1, -75)
     Sidebar.BackgroundTransparency = 1
+    Sidebar.BorderSizePixel = 0
     Sidebar.ScrollBarThickness = 0
 
     local SidebarLayout = Instance.new("UIListLayout", Sidebar)
     SidebarLayout.Padding = UDim.new(0, 5)
 
+    -- Page Container
     local PageFolder = Instance.new("Frame", Main)
     PageFolder.Position = UDim2.new(0, 130, 0, 45)
     PageFolder.Size = UDim2.new(1, -140, 1, -55)
     PageFolder.BackgroundTransparency = 1
 
-    -- Logic: Dragging
-    local dragging, dragStart, startPos
+    -- Corrected Drag & Resize Logic
+    local draggingSize, dragging = false, false
+    local dragStart, startPosDrag, startSize
+
     TitleLabel.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             dragStart = input.Position
-            startPos = Main.Position
+            startPosDrag = Main.Position
         end
     end)
 
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - dragStart
-            Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    ResizeHandle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            draggingSize = true
+            dragStart = input.Position
+            startSize = Main.Size
+            startPosDrag = Main.Position -- We need this to offset the anchor shift
         end
     end)
+
+
+UserInputService.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        if dragging then
+            local delta = input.Position - dragStart
+            Main.Position = UDim2.new(startPosDrag.X.Scale, startPosDrag.X.Offset + delta.X, startPosDrag.Y.Scale, startPosDrag.Y.Offset + delta.Y)
+        
+        elseif draggingSize then
+            local delta = input.Position - dragStart
+            
+            local newSizeX = math.max(300, startSize.X.Offset + delta.X)
+            local newSizeY = math.max(200, startSize.Y.Offset + delta.Y)
+
+            Main.Size = UDim2.new(0, newSizeX, 0, newSizeY)
+
+            local changeX = (newSizeX - startSize.X.Offset) / 2
+            local changeY = (newSizeY - startSize.Y.Offset) / 2
+
+            Main.Position = UDim2.new(
+                startPosDrag.X.Scale, 
+                startPosDrag.X.Offset + changeX, 
+                startPosDrag.Y.Scale, 
+                startPosDrag.Y.Offset + changeY
+            )
+        end
+    end
+end)
 
     UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging, draggingSize = false, false
+        end
     end)
 
-    -- Logic: Search Filtering
+    -- Search Logic
     SearchInput:GetPropertyChangedSignal("Text"):Connect(function()
         local filter = SearchInput.Text:lower()
         for _, btn in pairs(Sidebar:GetChildren()) do
@@ -154,63 +191,109 @@ function BMLibrary:CreateWindow(title, customSize)
         end
     end)
 
-    local Tabs = { ActivePage = nil }
+    local Tabs = { ActivePage = nil, TabCount = 0 }
 
     function Tabs:CreateCategory(name)
+        self.TabCount = self.TabCount + 1
         local TabBtn = Instance.new("TextButton", Sidebar)
         TabBtn.Size = UDim2.new(1, -5, 0, 30)
         TabBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-        TabBtn.Text = name
+        TabBtn.Text, TabBtn.Font, TabBtn.TextSize = name, Enum.Font.GothamSemibold, 12
         TabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-        TabBtn.Font = Enum.Font.GothamSemibold
+        TabBtn.BorderSizePixel = 0
         Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 4)
 
         local Page = Instance.new("ScrollingFrame", PageFolder)
+        Page.Name = name .. "_Page"
         Page.Size = UDim2.new(1, 0, 1, 0)
-        Page.Visible = false
-        Page.BackgroundTransparency = 1
-        Page.ScrollBarThickness = 2
+        Page.BackgroundTransparency, Page.Visible, Page.ScrollBarThickness = 1, false, 2
         Page.ScrollBarImageColor3 = THEME_COLOR
 
         local PageLayout = Instance.new("UIListLayout", Page)
-        PageLayout.Padding = UDim.new(0, 6)
+        PageLayout.Padding = UDim.new(0, 8)
+        PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
         local function Switch()
             for _, p in pairs(PageFolder:GetChildren()) do p.Visible = false end
-            for _, b in pairs(Sidebar:GetChildren()) do
-                if b:IsA("TextButton") then b.TextColor3 = Color3.fromRGB(150, 150, 150) end
+            for _, b in pairs(Sidebar:GetChildren()) do 
+                if b:IsA("TextButton") then b.BackgroundColor3 = Color3.fromRGB(25, 25, 30) b.TextColor3 = Color3.fromRGB(150, 150, 150) end
             end
-            Page.Visible = true
-            TabBtn.TextColor3 = THEME_COLOR
+            Page.Visible, TabBtn.BackgroundColor3, TabBtn.TextColor3 = true, Color3.fromRGB(40, 35, 50), Color3.new(1, 1, 1)
         end
 
         TabBtn.MouseButton1Click:Connect(Switch)
-        if not Tabs.ActivePage then Tabs.ActivePage = name Switch() end
+        if self.ActivePage == nil then self.ActivePage = name Switch() end
 
-        local Elements = {}
+        local Elements = { Count = 0 }
 
-        -- Button with your required onClick showDialog format
-        function Elements:CreateButton(text, callback)
-            local Btn = Instance.new("TextButton", Page)
-            Btn.Size = UDim2.new(1, -5, 0, 32)
-            Btn.BackgroundColor3 = ELEMENT_BG
-            Btn.Text = text
-            Btn.TextColor3 = Color3.new(1, 1, 1)
-            Instance.new("UICorner", Btn)
+        function Elements:CreateLabel(text, align)
+            self.Count = self.Count + 1
+            local Label = Instance.new("TextLabel", Page)
+            Label.LayoutOrder = self.Count
+            Label.Size = UDim2.new(1, -5, 0, 20)
+            Label.BackgroundTransparency, Label.Text = 1, text
+            Label.TextColor3, Label.Font, Label.TextSize = Color3.fromRGB(200, 200, 200), Enum.Font.GothamSemibold, 13
+            Label.TextXAlignment = Enum.TextXAlignment[align or "Left"]
+        end
 
-            Btn.MouseButton1Click:Connect(function()
-                if callback then callback() end
+        function Elements:CreateCheckbox(text, default, callback)
+            self.Count = self.Count + 1
+            local state = default or false
+            local Container = Instance.new("TextButton", Page)
+            Container.LayoutOrder, Container.Size, Container.BackgroundTransparency, Container.Text = self.Count, UDim2.new(1, -5, 0, 32), 1, ""
+            
+            local Label = Instance.new("TextLabel", Container)
+            Label.Size, Label.BackgroundTransparency, Label.Text = UDim2.new(1, -35, 1, 0), 1, text
+            Label.TextColor3, Label.Font, Label.TextSize, Label.TextXAlignment = Color3.new(1,1,1), Enum.Font.GothamSemibold, 13, Enum.TextXAlignment.Left
+            
+            local Box = Instance.new("Frame", Container)
+            Box.Size, Box.Position, Box.BackgroundColor3 = UDim2.new(0, 20, 0, 20), UDim2.new(1, -22, 0.5, -10), ELEMENT_BG
+            Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 4)
+            
+            local Stroke = Instance.new("UIStroke", Box)
+            Stroke.Color = state and THEME_COLOR or Color3.fromRGB(60, 60, 65)
+
+            local CheckMark = Instance.new("TextLabel", Box)
+            CheckMark.Size, CheckMark.BackgroundTransparency, CheckMark.Text = UDim2.new(1, 0, 1, 0), 1, "✓"
+            CheckMark.TextColor3, CheckMark.Font, CheckMark.TextSize = THEME_COLOR, Enum.Font.GothamBold, 14
+            CheckMark.TextTransparency = state and 0 or 1
+
+            Container.MouseButton1Click:Connect(function()
+                state = not state
+                TweenService:Create(CheckMark, TweenInfo.new(0.2), {TextTransparency = state and 0 or 1}):Play()
+                TweenService:Create(Stroke, TweenInfo.new(0.2), {Color = state and THEME_COLOR or Color3.fromRGB(60, 60, 65)}):Play()
+                if callback then callback(state) end
             end)
         end
 
-        -- Add other elements (Slider, Toggle, etc.) here as needed
-        return Elements
-    end
+        function Elements:CreateToggle(text, default, callback)
+            self.Count = self.Count + 1
+            local state = default or false
+            local Container = Instance.new("TextButton", Page)
+            Container.LayoutOrder, Container.Size, Container.BackgroundTransparency, Container.Text = self.Count, UDim2.new(1, -5, 0, 32), 1, ""
+            
+            local Label = Instance.new("TextLabel", Container)
+            Label.Size, Label.BackgroundTransparency, Label.Text = UDim2.new(1, -50, 1, 0), 1, text
+            Label.TextColor3, Label.Font, Label.TextSize, Label.TextXAlignment = Color3.new(1,1,1), Enum.Font.GothamSemibold, 13, Enum.TextXAlignment.Left
+            
+            local Outer = Instance.new("Frame", Container)
+            Outer.Size, Outer.Position, Outer.BackgroundColor3 = UDim2.new(0, 38, 0, 20), UDim2.new(1, -40, 0.5, -10), (state and THEME_COLOR or TOGGLE_OFF)
+            Instance.new("UICorner", Outer).CornerRadius = UDim.new(1, 0)
+            
+            local Inner = Instance.new("Frame", Outer)
+            Inner.Size, Inner.Position = UDim2.new(0, 14, 0, 14), UDim2.new(0, state and 21 or 3, 0.5, -7)
+            Inner.BackgroundColor3 = Color3.new(1,1,1)
+            Instance.new("UICorner", Inner).CornerRadius = UDim.new(1, 0)
+            
+            Container.MouseButton1Click:Connect(function()
+                state = not state
+                TweenService:Create(Inner, TweenInfo.new(0.2), {Position = UDim2.new(0, state and 21 or 3, 0.5, -7)}):Play()
+                TweenService:Create(Outer, TweenInfo.new(0.2), {BackgroundColor3 = state and THEME_COLOR or TOGGLE_OFF}):Play()
+                if callback then callback(state) end
+            end)
+        end
 
-    -- External access to the dialog
-    function Tabs:ShowUpdateDialog()
-        -- Directly using your requested logic
-        showDialog("Critical Update", "Please wait...", false)
+        return Elements
     end
 
     return Tabs
