@@ -184,21 +184,38 @@ function BMLibrary:CreateWindow(title)
         Page.Size = UDim2.new(1, 0, 1, 0)
         Page.BackgroundTransparency, Page.Visible, Page.ScrollBarThickness = 1, false, 2
         Page.ScrollBarImageColor3 = THEME_COLOR
+        Page.CanvasSize = UDim2.new(0, 0, 0, 0) -- Starts at 0
+        Page.AutomaticCanvasSize = Enum.AutomaticSize.Y -- FIXED: This makes items visible!
 
         local PageLayout = Instance.new("UIListLayout", Page)
         PageLayout.Padding = UDim.new(0, 8)
         PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        
+        -- Padding fix to prevent items from sticking to the top edge
+        local UIPadding = Instance.new("UIPadding", Page)
+        UIPadding.PaddingTop = UDim.new(0, 5)
+        UIPadding.PaddingLeft = UDim.new(0, 5)
 
         local function Switch()
-            for _, p in pairs(PageFolder:GetChildren()) do p.Visible = false end
-            for _, b in pairs(Sidebar:GetChildren()) do 
-                if b:IsA("TextButton") then b.BackgroundColor3 = Color3.fromRGB(25, 25, 30) b.TextColor3 = Color3.fromRGB(150, 150, 150) end
+            for _, p in pairs(PageFolder:GetChildren()) do 
+                if p:IsA("ScrollingFrame") then p.Visible = false end 
             end
-            Page.Visible, TabBtn.BackgroundColor3, TabBtn.TextColor3 = true, Color3.fromRGB(40, 35, 50), Color3.new(1, 1, 1)
+            for _, b in pairs(Sidebar:GetChildren()) do 
+                if b:IsA("TextButton") then 
+                    b.BackgroundColor3 = Color3.fromRGB(25, 25, 30) 
+                    b.TextColor3 = Color3.fromRGB(150, 150, 150) 
+                end
+            end
+            Page.Visible = true
+            TabBtn.BackgroundColor3 = Color3.fromRGB(40, 35, 50)
+            TabBtn.TextColor3 = Color3.new(1, 1, 1)
         end
 
         TabBtn.MouseButton1Click:Connect(Switch)
-        if self.ActivePage == nil then self.ActivePage = name Switch() end
+        if self.ActivePage == nil then 
+            self.ActivePage = name 
+            task.spawn(Switch) -- Using spawn ensures the first page loads correctly
+        end
 
         local Elements = { Count = 0 }
 
