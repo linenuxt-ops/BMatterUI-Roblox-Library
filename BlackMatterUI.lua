@@ -116,7 +116,7 @@ function BMLibrary:CreateWindow(title)
     PageFolder.Size = UDim2.new(1, -140, 1, -55)
     PageFolder.BackgroundTransparency = 1
 
-    -- WORKING RESIZE & DRAG
+    -- RESIZE & DRAG
     local draggingSize, dragging = false, false
     local dragStart, startPosDrag, startSize
 
@@ -184,17 +184,16 @@ function BMLibrary:CreateWindow(title)
         Page.Size = UDim2.new(1, 0, 1, 0)
         Page.BackgroundTransparency, Page.Visible, Page.ScrollBarThickness = 1, false, 2
         Page.ScrollBarImageColor3 = THEME_COLOR
-        Page.CanvasSize = UDim2.new(0, 0, 0, 0) -- Starts at 0
-        Page.AutomaticCanvasSize = Enum.AutomaticSize.Y -- FIXED: This makes items visible!
+        Page.CanvasSize = UDim2.new(0, 0, 0, 0)
+        Page.AutomaticCanvasSize = Enum.AutomaticSize.Y 
 
         local PageLayout = Instance.new("UIListLayout", Page)
         PageLayout.Padding = UDim.new(0, 8)
         PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
         
-        -- Padding fix to prevent items from sticking to the top edge
         local UIPadding = Instance.new("UIPadding", Page)
         UIPadding.PaddingTop = UDim.new(0, 5)
-        UIPadding.PaddingLeft = UDim.new(0, 5)
+        UIPadding.PaddingLeft = UDim.new(0, 2)
 
         local function Switch()
             for _, p in pairs(PageFolder:GetChildren()) do 
@@ -214,7 +213,7 @@ function BMLibrary:CreateWindow(title)
         TabBtn.MouseButton1Click:Connect(Switch)
         if self.ActivePage == nil then 
             self.ActivePage = name 
-            task.spawn(Switch) -- Using spawn ensures the first page loads correctly
+            task.spawn(Switch)
         end
 
         local Elements = { Count = 0 }
@@ -223,7 +222,7 @@ function BMLibrary:CreateWindow(title)
         function Elements:CreateLabel(text, align)
             self.Count = self.Count + 1
             local Label = Instance.new("TextLabel", Page)
-            Label.LayoutOrder, Label.Size, Label.BackgroundTransparency = self.Count, UDim2.new(1, -5, 0, 20), 1
+            Label.LayoutOrder, Label.Size, Label.BackgroundTransparency = self.Count, UDim2.new(1, -10, 0, 20), 1
             Label.Text, Label.TextColor3, Label.Font, Label.TextSize = text, Color3.fromRGB(200, 200, 200), Enum.Font.GothamSemibold, 13
             Label.TextXAlignment = Enum.TextXAlignment[align or "Left"]
         end
@@ -232,7 +231,7 @@ function BMLibrary:CreateWindow(title)
         function Elements:CreateButton(text, callback)
             self.Count = self.Count + 1
             local Btn = Instance.new("TextButton", Page)
-            Btn.LayoutOrder, Btn.Size, Btn.BackgroundColor3 = self.Count, UDim2.new(1, -5, 0, 32), ELEMENT_BG
+            Btn.LayoutOrder, Btn.Size, Btn.BackgroundColor3 = self.Count, UDim2.new(1, -10, 0, 32), ELEMENT_BG
             Btn.Text, Btn.Font, Btn.TextColor3, Btn.TextSize = text, Enum.Font.GothamSemibold, Color3.new(1,1,1), 13
             Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 4)
             Btn.MouseButton1Click:Connect(function() if callback then callback() end end)
@@ -243,7 +242,7 @@ function BMLibrary:CreateWindow(title)
             self.Count = self.Count + 1
             local state = default or false
             local Container = Instance.new("TextButton", Page)
-            Container.LayoutOrder, Container.Size, Container.BackgroundTransparency, Container.Text = self.Count, UDim2.new(1, -5, 0, 32), 1, ""
+            Container.LayoutOrder, Container.Size, Container.BackgroundTransparency, Container.Text = self.Count, UDim2.new(1, -10, 0, 32), 1, ""
             
             local Label = Instance.new("TextLabel", Container)
             Label.Size, Label.BackgroundTransparency, Label.Text = UDim2.new(1, -35, 1, 0), 1, text
@@ -274,7 +273,7 @@ function BMLibrary:CreateWindow(title)
             self.Count = self.Count + 1
             local state = default or false
             local Container = Instance.new("TextButton", Page)
-            Container.LayoutOrder, Container.Size, Container.BackgroundTransparency, Container.Text = self.Count, UDim2.new(1, -5, 0, 32), 1, ""
+            Container.LayoutOrder, Container.Size, Container.BackgroundTransparency, Container.Text = self.Count, UDim2.new(1, -10, 0, 32), 1, ""
             
             local Label = Instance.new("TextLabel", Container)
             Label.Size, Label.BackgroundTransparency, Label.Text = UDim2.new(1, -50, 1, 0), 1, text
@@ -297,50 +296,47 @@ function BMLibrary:CreateWindow(title)
             end)
         end
 
-        -- SLIDER
-        function Elements:CreateSlider(text, min, max, default, callback)
+        -- DROPDOWN
+        function Elements:CreateDropdown(text, list, callback)
             self.Count = self.Count + 1
+            local expanded = false
             local Container = Instance.new("Frame", Page)
-            Container.LayoutOrder, Container.Size, Container.BackgroundTransparency = self.Count, UDim2.new(1, -5, 0, 45), 1
-            
-            local Label = Instance.new("TextLabel", Container)
-            Label.Size, Label.BackgroundTransparency, Label.Text = UDim2.new(1, 0, 0, 20), 1, text .. ": " .. default
-            Label.TextColor3, Label.Font, Label.TextSize, Label.TextXAlignment = Color3.new(1,1,1), Enum.Font.GothamSemibold, 13, Enum.TextXAlignment.Left
-            
-            local SliderBack = Instance.new("Frame", Container)
-            SliderBack.Size, SliderBack.Position, SliderBack.BackgroundColor3 = UDim2.new(1, 0, 0, 6), UDim2.new(0, 0, 0, 28), SLIDER_BG
-            Instance.new("UICorner", SliderBack)
+            Container.LayoutOrder, Container.Size, Container.BackgroundColor3 = self.Count, UDim2.new(1, -10, 0, 32), ELEMENT_BG
+            Container.ClipsDescendants = true
+            Instance.new("UICorner", Container)
 
-            local SliderFill = Instance.new("Frame", SliderBack)
-            SliderFill.Size, SliderFill.BackgroundColor3 = UDim2.new((default-min)/(max-min), 0, 1, 0), THEME_COLOR
-            Instance.new("UICorner", SliderFill)
+            local MainBtn = Instance.new("TextButton", Container)
+            MainBtn.Size, MainBtn.BackgroundTransparency = UDim2.new(1, 0, 0, 32), 1
+            MainBtn.Text, MainBtn.Font, MainBtn.TextColor3, MainBtn.TextSize = "  " .. text, Enum.Font.GothamSemibold, Color3.new(1,1,1), 13
+            MainBtn.TextXAlignment = Enum.TextXAlignment.Left
 
-            local function Update(input)
-                local pos = math.clamp((input.Position.X - SliderBack.AbsolutePosition.X) / SliderBack.AbsoluteSize.X, 0, 1)
-                local val = math.floor(min + (max - min) * pos)
-                SliderFill.Size = UDim2.new(pos, 0, 1, 0)
-                Label.Text = text .. ": " .. val
-                callback(val)
-            end
+            local ListFrame = Instance.new("Frame", Container)
+            ListFrame.Position, ListFrame.Size, ListFrame.BackgroundTransparency = UDim2.new(0, 0, 0, 32), UDim2.new(1, 0, 0, #list * 25), 1
+            local LLayout = Instance.new("UIListLayout", ListFrame)
 
-            SliderBack.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    local move; move = UserInputService.InputChanged:Connect(function(input)
-                        if input.UserInputType == Enum.UserInputType.MouseMovement then Update(input) end
-                    end)
-                    local ended; ended = UserInputService.InputEnded:Connect(function(input)
-                        if input.UserInputType == Enum.UserInputType.MouseButton1 then move:Disconnect() ended:Disconnect() end
-                    end)
-                    Update(input)
-                end
+            MainBtn.MouseButton1Click:Connect(function()
+                expanded = not expanded
+                TweenService:Create(Container, TweenInfo.new(0.3), {Size = UDim2.new(1, -10, 0, expanded and (35 + #list * 25) or 32)}):Play()
             end)
+
+            for _, val in pairs(list) do
+                local Item = Instance.new("TextButton", ListFrame)
+                Item.Size, Item.BackgroundTransparency = UDim2.new(1, 0, 0, 25), 1
+                Item.Text, Item.Font, Item.TextColor3, Item.TextSize = tostring(val), Enum.Font.Gotham, Color3.fromRGB(200, 200, 200), 12
+                Item.MouseButton1Click:Connect(function()
+                    MainBtn.Text = "  " .. text .. ": " .. tostring(val)
+                    expanded = false
+                    TweenService:Create(Container, TweenInfo.new(0.3), {Size = UDim2.new(1, -10, 0, 32)}):Play()
+                    callback(val)
+                end)
+            end
         end
 
         -- INPUT
         function Elements:CreateInput(text, placeholder, callback)
             self.Count = self.Count + 1
             local Container = Instance.new("Frame", Page)
-            Container.LayoutOrder, Container.Size, Container.BackgroundColor3 = self.Count, UDim2.new(1, -5, 0, 32), ELEMENT_BG
+            Container.LayoutOrder, Container.Size, Container.BackgroundColor3 = self.Count, UDim2.new(1, -10, 0, 32), ELEMENT_BG
             Instance.new("UICorner", Container).CornerRadius = UDim.new(0, 4)
 
             local Box = Instance.new("TextBox", Container)
