@@ -13,9 +13,6 @@ local TOGGLE_OFF = Color3.fromRGB(45, 45, 45)
 local SLIDER_BG = Color3.fromRGB(45, 45, 45)
 local ELEMENT_BG = Color3.fromRGB(30, 30, 35)
 
--- Standard Cursor Assets
-local CURSOR_RESIZE = "rbxassetid://13404403816"
-
 local function ForceCleanup()
     for _, child in ipairs(CoreGui:GetChildren()) do
         if child.Name == "BMLibrary_Root" then
@@ -32,7 +29,6 @@ function BMLibrary:CreateWindow(title)
     ScreenGui.Parent = CoreGui
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-    -- Main Window
     local Main = Instance.new("Frame", ScreenGui)
     Main.Name = "Main"
     Main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
@@ -44,13 +40,11 @@ function BMLibrary:CreateWindow(title)
     Main.ClipsDescendants = true
     Main.BackgroundTransparency = 1
 
-    -- Intro Animation
     TweenService:Create(Main, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
         Size = UDim2.new(0, 450, 0, 300),
         BackgroundTransparency = 0
     }):Play()
 
-    -- Resize Icon
     local ResizeIcon = Instance.new("TextLabel", Main)
     ResizeIcon.BackgroundTransparency = 1
     ResizeIcon.Position = UDim2.new(1, -15, 1, -15)
@@ -68,7 +62,6 @@ function BMLibrary:CreateWindow(title)
     ResizeHandle.Text = ""
     ResizeHandle.ZIndex = 100
 
-    -- Header Title (Drag Handle)
     local TitleLabel = Instance.new("TextButton", Main)
     TitleLabel.Name = "TitleHandle"
     TitleLabel.BackgroundTransparency = 1
@@ -91,7 +84,6 @@ function BMLibrary:CreateWindow(title)
     VerticalLine.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
     VerticalLine.BorderSizePixel = 0
 
-    -- Sidebar Search
     local SearchContainer = Instance.new("Frame", Main)
     SearchContainer.Position = UDim2.new(0, 5, 0, 40)
     SearchContainer.Size = UDim2.new(0, 110, 0, 25)
@@ -109,7 +101,6 @@ function BMLibrary:CreateWindow(title)
     SearchInput.TextSize = 11
     SearchInput.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- Sidebar
     local Sidebar = Instance.new("ScrollingFrame", Main)
     Sidebar.Position = UDim2.new(0, 5, 0, 70)
     Sidebar.Size = UDim2.new(0, 110, 1, -75)
@@ -120,13 +111,12 @@ function BMLibrary:CreateWindow(title)
     local SidebarLayout = Instance.new("UIListLayout", Sidebar)
     SidebarLayout.Padding = UDim.new(0, 5)
 
-    -- Page Container
     local PageFolder = Instance.new("Frame", Main)
     PageFolder.Position = UDim2.new(0, 130, 0, 45)
     PageFolder.Size = UDim2.new(1, -140, 1, -55)
     PageFolder.BackgroundTransparency = 1
 
-    -- Corrected Drag & Resize Logic
+    -- WORKING RESIZE & DRAG
     local draggingSize, dragging = false, false
     local dragStart, startPosDrag, startSize
 
@@ -143,37 +133,26 @@ function BMLibrary:CreateWindow(title)
             draggingSize = true
             dragStart = input.Position
             startSize = Main.Size
-            startPosDrag = Main.Position -- We need this to offset the anchor shift
+            startPosDrag = Main.Position
         end
     end)
 
-
-UserInputService.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        if dragging then
-            local delta = input.Position - dragStart
-            Main.Position = UDim2.new(startPosDrag.X.Scale, startPosDrag.X.Offset + delta.X, startPosDrag.Y.Scale, startPosDrag.Y.Offset + delta.Y)
-        
-        elseif draggingSize then
-            local delta = input.Position - dragStart
-            
-            local newSizeX = math.max(300, startSize.X.Offset + delta.X)
-            local newSizeY = math.max(200, startSize.Y.Offset + delta.Y)
-
-            Main.Size = UDim2.new(0, newSizeX, 0, newSizeY)
-
-            local changeX = (newSizeX - startSize.X.Offset) / 2
-            local changeY = (newSizeY - startSize.Y.Offset) / 2
-
-            Main.Position = UDim2.new(
-                startPosDrag.X.Scale, 
-                startPosDrag.X.Offset + changeX, 
-                startPosDrag.Y.Scale, 
-                startPosDrag.Y.Offset + changeY
-            )
+    UserInputService.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            if dragging then
+                local delta = input.Position - dragStart
+                Main.Position = UDim2.new(startPosDrag.X.Scale, startPosDrag.X.Offset + delta.X, startPosDrag.Y.Scale, startPosDrag.Y.Offset + delta.Y)
+            elseif draggingSize then
+                local delta = input.Position - dragStart
+                local newSizeX = math.max(300, startSize.X.Offset + delta.X)
+                local newSizeY = math.max(200, startSize.Y.Offset + delta.Y)
+                Main.Size = UDim2.new(0, newSizeX, 0, newSizeY)
+                local changeX = (newSizeX - startSize.X.Offset) / 2
+                local changeY = (newSizeY - startSize.Y.Offset) / 2
+                Main.Position = UDim2.new(startPosDrag.X.Scale, startPosDrag.X.Offset + changeX, startPosDrag.Y.Scale, startPosDrag.Y.Offset + changeY)
+            end
         end
-    end
-end)
+    end)
 
     UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -181,13 +160,10 @@ end)
         end
     end)
 
-    -- Search Logic
     SearchInput:GetPropertyChangedSignal("Text"):Connect(function()
         local filter = SearchInput.Text:lower()
         for _, btn in pairs(Sidebar:GetChildren()) do
-            if btn:IsA("TextButton") then
-                btn.Visible = btn.Text:lower():find(filter) ~= nil
-            end
+            if btn:IsA("TextButton") then btn.Visible = btn.Text:lower():find(filter) ~= nil end
         end
     end)
 
@@ -226,16 +202,26 @@ end)
 
         local Elements = { Count = 0 }
 
+        -- LABEL
         function Elements:CreateLabel(text, align)
             self.Count = self.Count + 1
             local Label = Instance.new("TextLabel", Page)
-            Label.LayoutOrder = self.Count
-            Label.Size = UDim2.new(1, -5, 0, 20)
-            Label.BackgroundTransparency, Label.Text = 1, text
-            Label.TextColor3, Label.Font, Label.TextSize = Color3.fromRGB(200, 200, 200), Enum.Font.GothamSemibold, 13
+            Label.LayoutOrder, Label.Size, Label.BackgroundTransparency = self.Count, UDim2.new(1, -5, 0, 20), 1
+            Label.Text, Label.TextColor3, Label.Font, Label.TextSize = text, Color3.fromRGB(200, 200, 200), Enum.Font.GothamSemibold, 13
             Label.TextXAlignment = Enum.TextXAlignment[align or "Left"]
         end
 
+        -- BUTTON
+        function Elements:CreateButton(text, callback)
+            self.Count = self.Count + 1
+            local Btn = Instance.new("TextButton", Page)
+            Btn.LayoutOrder, Btn.Size, Btn.BackgroundColor3 = self.Count, UDim2.new(1, -5, 0, 32), ELEMENT_BG
+            Btn.Text, Btn.Font, Btn.TextColor3, Btn.TextSize = text, Enum.Font.GothamSemibold, Color3.new(1,1,1), 13
+            Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 4)
+            Btn.MouseButton1Click:Connect(function() if callback then callback() end end)
+        end
+
+        -- CHECKBOX
         function Elements:CreateCheckbox(text, default, callback)
             self.Count = self.Count + 1
             local state = default or false
@@ -266,6 +252,7 @@ end)
             end)
         end
 
+        -- TOGGLE
         function Elements:CreateToggle(text, default, callback)
             self.Count = self.Count + 1
             local state = default or false
@@ -291,6 +278,60 @@ end)
                 TweenService:Create(Outer, TweenInfo.new(0.2), {BackgroundColor3 = state and THEME_COLOR or TOGGLE_OFF}):Play()
                 if callback then callback(state) end
             end)
+        end
+
+        -- SLIDER
+        function Elements:CreateSlider(text, min, max, default, callback)
+            self.Count = self.Count + 1
+            local Container = Instance.new("Frame", Page)
+            Container.LayoutOrder, Container.Size, Container.BackgroundTransparency = self.Count, UDim2.new(1, -5, 0, 45), 1
+            
+            local Label = Instance.new("TextLabel", Container)
+            Label.Size, Label.BackgroundTransparency, Label.Text = UDim2.new(1, 0, 0, 20), 1, text .. ": " .. default
+            Label.TextColor3, Label.Font, Label.TextSize, Label.TextXAlignment = Color3.new(1,1,1), Enum.Font.GothamSemibold, 13, Enum.TextXAlignment.Left
+            
+            local SliderBack = Instance.new("Frame", Container)
+            SliderBack.Size, SliderBack.Position, SliderBack.BackgroundColor3 = UDim2.new(1, 0, 0, 6), UDim2.new(0, 0, 0, 28), SLIDER_BG
+            Instance.new("UICorner", SliderBack)
+
+            local SliderFill = Instance.new("Frame", SliderBack)
+            SliderFill.Size, SliderFill.BackgroundColor3 = UDim2.new((default-min)/(max-min), 0, 1, 0), THEME_COLOR
+            Instance.new("UICorner", SliderFill)
+
+            local function Update(input)
+                local pos = math.clamp((input.Position.X - SliderBack.AbsolutePosition.X) / SliderBack.AbsoluteSize.X, 0, 1)
+                local val = math.floor(min + (max - min) * pos)
+                SliderFill.Size = UDim2.new(pos, 0, 1, 0)
+                Label.Text = text .. ": " .. val
+                callback(val)
+            end
+
+            SliderBack.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    local move; move = UserInputService.InputChanged:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseMovement then Update(input) end
+                    end)
+                    local ended; ended = UserInputService.InputEnded:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 then move:Disconnect() ended:Disconnect() end
+                    end)
+                    Update(input)
+                end
+            end)
+        end
+
+        -- INPUT
+        function Elements:CreateInput(text, placeholder, callback)
+            self.Count = self.Count + 1
+            local Container = Instance.new("Frame", Page)
+            Container.LayoutOrder, Container.Size, Container.BackgroundColor3 = self.Count, UDim2.new(1, -5, 0, 32), ELEMENT_BG
+            Instance.new("UICorner", Container).CornerRadius = UDim.new(0, 4)
+
+            local Box = Instance.new("TextBox", Container)
+            Box.Size, Box.BackgroundTransparency = UDim2.new(1, -10, 1, 0), 1
+            Box.Position = UDim2.new(0, 5, 0, 0)
+            Box.PlaceholderText, Box.Text = placeholder, ""
+            Box.TextColor3, Box.Font, Box.TextSize = Color3.new(1,1,1), Enum.Font.GothamSemibold, 13
+            Box.FocusLost:Connect(function() callback(Box.Text) end)
         end
 
         return Elements
