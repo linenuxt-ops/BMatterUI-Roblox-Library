@@ -91,10 +91,28 @@ function BMLibrary:CreateWindow(title)
     VerticalLine.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
     VerticalLine.BorderSizePixel = 0
 
+    -- Sidebar Search
+    local SearchContainer = Instance.new("Frame", Main)
+    SearchContainer.Position = UDim2.new(0, 5, 0, 40)
+    SearchContainer.Size = UDim2.new(0, 110, 0, 25)
+    SearchContainer.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    Instance.new("UICorner", SearchContainer).CornerRadius = UDim.new(0, 4)
+
+    local SearchInput = Instance.new("TextBox", SearchContainer)
+    SearchInput.Size = UDim2.new(1, -10, 1, 0)
+    SearchInput.Position = UDim2.new(0, 5, 0, 0)
+    SearchInput.BackgroundTransparency = 1
+    SearchInput.PlaceholderText = "Search..."
+    SearchInput.Text = ""
+    SearchInput.TextColor3 = Color3.new(1, 1, 1)
+    SearchInput.Font = Enum.Font.GothamSemibold
+    SearchInput.TextSize = 11
+    SearchInput.TextXAlignment = Enum.TextXAlignment.Left
+
     -- Sidebar
     local Sidebar = Instance.new("ScrollingFrame", Main)
-    Sidebar.Position = UDim2.new(0, 5, 0, 40)
-    Sidebar.Size = UDim2.new(0, 110, 1, -45)
+    Sidebar.Position = UDim2.new(0, 5, 0, 70)
+    Sidebar.Size = UDim2.new(0, 110, 1, -75)
     Sidebar.BackgroundTransparency = 1
     Sidebar.BorderSizePixel = 0
     Sidebar.ScrollBarThickness = 0
@@ -108,7 +126,7 @@ function BMLibrary:CreateWindow(title)
     PageFolder.Size = UDim2.new(1, -140, 1, -55)
     PageFolder.BackgroundTransparency = 1
 
-    -- Updated Drag Logic for AnchorPoint 0.5
+    -- Corrected Drag & Resize Logic
     local draggingSize, dragging = false, false
     local dragStart, startPosDrag, startSize
 
@@ -125,6 +143,7 @@ function BMLibrary:CreateWindow(title)
             draggingSize = true
             dragStart = input.Position
             startSize = Main.Size
+            startPosDrag = Main.Position -- We need this to offset the anchor shift
         end
     end)
 
@@ -135,7 +154,15 @@ function BMLibrary:CreateWindow(title)
                 Main.Position = UDim2.new(startPosDrag.X.Scale, startPosDrag.X.Offset + delta.X, startPosDrag.Y.Scale, startPosDrag.Y.Offset + delta.Y)
             elseif draggingSize then
                 local delta = input.Position - dragStart
-                Main.Size = UDim2.new(0, math.max(300, startSize.X.Offset + delta.X), 0, math.max(200, startSize.Y.Offset + delta.Y))
+                local newX = math.max(300, startSize.X.Offset + delta.X)
+                local newY = math.max(200, startSize.Y.Offset + delta.Y)
+                
+                Main.Size = UDim2.new(0, newX, 0, newY)
+                -- Fix: Move position by half the size difference to keep top-left pinned
+                Main.Position = UDim2.new(
+                    startPosDrag.X.Scale, startPosDrag.X.Offset + (newX - startSize.X.Offset)/2,
+                    startPosDrag.Y.Scale, startPosDrag.Y.Offset + (newY - startSize.Y.Offset)/2
+                )
             end
         end
     end)
@@ -146,18 +173,24 @@ function BMLibrary:CreateWindow(title)
         end
     end)
 
+    -- Search Logic
+    SearchInput:GetPropertyChangedSignal("Text"):Connect(function()
+        local filter = SearchInput.Text:lower()
+        for _, btn in pairs(Sidebar:GetChildren()) do
+            if btn:IsA("TextButton") then
+                btn.Visible = btn.Text:lower():find(filter) ~= nil
+            end
+        end
+    end)
+
     local Tabs = { ActivePage = nil, TabCount = 0 }
 
     function Tabs:CreateCategory(name)
         self.TabCount = self.TabCount + 1
-        local TabOrder = self.TabCount
-
         local TabBtn = Instance.new("TextButton", Sidebar)
         TabBtn.Size = UDim2.new(1, -5, 0, 30)
         TabBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-        TabBtn.Text = name
-        TabBtn.Font = Enum.Font.GothamSemibold
-        TabBtn.TextSize = 12
+        TabBtn.Text, TabBtn.Font, TabBtn.TextSize = name, Enum.Font.GothamSemibold, 12
         TabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
         TabBtn.BorderSizePixel = 0
         Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 4)
@@ -165,26 +198,19 @@ function BMLibrary:CreateWindow(title)
         local Page = Instance.new("ScrollingFrame", PageFolder)
         Page.Name = name .. "_Page"
         Page.Size = UDim2.new(1, 0, 1, 0)
-        Page.BackgroundTransparency = 1
-        Page.Visible = false
-        Page.ScrollBarThickness = 2
+        Page.BackgroundTransparency, Page.Visible, Page.ScrollBarThickness = 1, false, 2
         Page.ScrollBarImageColor3 = THEME_COLOR
 
         local PageLayout = Instance.new("UIListLayout", Page)
         PageLayout.Padding = UDim.new(0, 8)
-        PageLayout.SortOrder = Enum.SortOrder.LayoutOrder -- Keep items in order
+        PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
         local function Switch()
             for _, p in pairs(PageFolder:GetChildren()) do p.Visible = false end
             for _, b in pairs(Sidebar:GetChildren()) do 
-                if b:IsA("TextButton") then
-                    b.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-                    b.TextColor3 = Color3.fromRGB(150, 150, 150)
-                end
+                if b:IsA("TextButton") then b.BackgroundColor3 = Color3.fromRGB(25, 25, 30) b.TextColor3 = Color3.fromRGB(150, 150, 150) end
             end
-            Page.Visible = true
-            TabBtn.BackgroundColor3 = Color3.fromRGB(40, 35, 50)
-            TabBtn.TextColor3 = Color3.new(1, 1, 1)
+            Page.Visible, TabBtn.BackgroundColor3, TabBtn.TextColor3 = true, Color3.fromRGB(40, 35, 50), Color3.new(1, 1, 1)
         end
 
         TabBtn.MouseButton1Click:Connect(Switch)
@@ -197,57 +223,36 @@ function BMLibrary:CreateWindow(title)
             local Label = Instance.new("TextLabel", Page)
             Label.LayoutOrder = self.Count
             Label.Size = UDim2.new(1, -5, 0, 20)
-            Label.BackgroundTransparency = 1
-            Label.Text = text
-            Label.TextColor3 = Color3.fromRGB(200, 200, 200)
-            Label.Font = Enum.Font.GothamSemibold
-            Label.TextSize = 13
+            Label.BackgroundTransparency, Label.Text = 1, text
+            Label.TextColor3, Label.Font, Label.TextSize = Color3.fromRGB(200, 200, 200), Enum.Font.GothamSemibold, 13
             Label.TextXAlignment = Enum.TextXAlignment[align or "Left"]
         end
 
         function Elements:CreateCheckbox(text, default, callback)
             self.Count = self.Count + 1
             local state = default or false
-            
             local Container = Instance.new("TextButton", Page)
-            Container.LayoutOrder = self.Count
-            Container.Size = UDim2.new(1, -5, 0, 32)
-            Container.BackgroundTransparency = 1
-            Container.Text = ""
+            Container.LayoutOrder, Container.Size, Container.BackgroundTransparency, Container.Text = self.Count, UDim2.new(1, -5, 0, 32), 1, ""
             
             local Label = Instance.new("TextLabel", Container)
-            Label.Size = UDim2.new(1, -35, 1, 0)
-            Label.BackgroundTransparency = 1
-            Label.Text = text
-            Label.TextColor3 = Color3.new(1,1,1)
-            Label.Font = Enum.Font.GothamSemibold
-            Label.TextSize = 13
-            Label.TextXAlignment = Enum.TextXAlignment.Left
+            Label.Size, Label.BackgroundTransparency, Label.Text = UDim2.new(1, -35, 1, 0), 1, text
+            Label.TextColor3, Label.Font, Label.TextSize, Label.TextXAlignment = Color3.new(1,1,1), Enum.Font.GothamSemibold, 13, Enum.TextXAlignment.Left
             
             local Box = Instance.new("Frame", Container)
-            Box.Size = UDim2.new(0, 20, 0, 20)
-            Box.Position = UDim2.new(1, -22, 0.5, -10)
-            Box.BackgroundColor3 = ELEMENT_BG
+            Box.Size, Box.Position, Box.BackgroundColor3 = UDim2.new(0, 20, 0, 20), UDim2.new(1, -22, 0.5, -10), ELEMENT_BG
             Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 4)
             
             local Stroke = Instance.new("UIStroke", Box)
             Stroke.Color = state and THEME_COLOR or Color3.fromRGB(60, 60, 65)
 
             local CheckMark = Instance.new("TextLabel", Box)
-            CheckMark.Size = UDim2.new(1, 0, 1, 0)
-            CheckMark.BackgroundTransparency = 1
-            CheckMark.Text = "✓"
-            CheckMark.TextColor3 = THEME_COLOR
-            CheckMark.Font = Enum.Font.GothamBold
-            CheckMark.TextSize = 14
+            CheckMark.Size, CheckMark.BackgroundTransparency, CheckMark.Text = UDim2.new(1, 0, 1, 0), 1, "✓"
+            CheckMark.TextColor3, CheckMark.Font, CheckMark.TextSize = THEME_COLOR, Enum.Font.GothamBold, 14
             CheckMark.TextTransparency = state and 0 or 1
-            CheckMark.Rotation = state and 0 or -45
 
             Container.MouseButton1Click:Connect(function()
                 state = not state
-                Box.Size = UDim2.new(0, 16, 0, 16)
-                TweenService:Create(Box, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Size = UDim2.new(0, 20, 0, 20)}):Play()
-                TweenService:Create(CheckMark, TweenInfo.new(0.2), {TextTransparency = state and 0 or 1, Rotation = state and 0 or -45}):Play()
+                TweenService:Create(CheckMark, TweenInfo.new(0.2), {TextTransparency = state and 0 or 1}):Play()
                 TweenService:Create(Stroke, TweenInfo.new(0.2), {Color = state and THEME_COLOR or Color3.fromRGB(60, 60, 65)}):Play()
                 if callback then callback(state) end
             end)
@@ -257,15 +262,14 @@ function BMLibrary:CreateWindow(title)
             self.Count = self.Count + 1
             local state = default or false
             local Container = Instance.new("TextButton", Page)
-            Container.LayoutOrder = self.Count
-            Container.Size, Container.BackgroundTransparency, Container.Text = UDim2.new(1, -5, 0, 32), 1, ""
+            Container.LayoutOrder, Container.Size, Container.BackgroundTransparency, Container.Text = self.Count, UDim2.new(1, -5, 0, 32), 1, ""
             
             local Label = Instance.new("TextLabel", Container)
             Label.Size, Label.BackgroundTransparency, Label.Text = UDim2.new(1, -50, 1, 0), 1, text
             Label.TextColor3, Label.Font, Label.TextSize, Label.TextXAlignment = Color3.new(1,1,1), Enum.Font.GothamSemibold, 13, Enum.TextXAlignment.Left
             
             local Outer = Instance.new("Frame", Container)
-            Outer.Size, Outer.Position, Outer.BackgroundColor3 = UDim2.new(0, 38, 0, 20), UDim2.new(1, -40, 0.5, -10), TOGGLE_OFF
+            Outer.Size, Outer.Position, Outer.BackgroundColor3 = UDim2.new(0, 38, 0, 20), UDim2.new(1, -40, 0.5, -10), (state and THEME_COLOR or TOGGLE_OFF)
             Instance.new("UICorner", Outer).CornerRadius = UDim.new(1, 0)
             
             local Inner = Instance.new("Frame", Outer)
@@ -280,19 +284,6 @@ function BMLibrary:CreateWindow(title)
                 if callback then callback(state) end
             end)
         end
-
-        function Elements:CreateButton(text, callback)
-            self.Count = self.Count + 1
-            local Btn = Instance.new("TextButton", Page)
-            Btn.LayoutOrder = self.Count
-            Btn.BackgroundColor3, Btn.Size = ELEMENT_BG, UDim2.new(1, -5, 0, 32)
-            Btn.Font, Btn.Text, Btn.TextColor3, Btn.TextSize = Enum.Font.GothamSemibold, text, Color3.fromRGB(200, 200, 200), 13
-            Btn.BorderSizePixel = 0
-            Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 4)
-            Btn.MouseButton1Click:Connect(function() if callback then callback() end end)
-        end
-
-        -- ... Add other elements (Slider, Input, Dropdown) following the same "self.Count" pattern ...
 
         return Elements
     end
