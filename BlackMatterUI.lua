@@ -147,25 +147,33 @@ function BMLibrary:CreateWindow(title)
         end
     end)
 
-    UserInputService.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
-            if dragging then
-                local delta = input.Position - dragStart
-                Main.Position = UDim2.new(startPosDrag.X.Scale, startPosDrag.X.Offset + delta.X, startPosDrag.Y.Scale, startPosDrag.Y.Offset + delta.Y)
-            elseif draggingSize then
-                local delta = input.Position - dragStart
-                local newX = math.max(300, startSize.X.Offset + delta.X)
-                local newY = math.max(200, startSize.Y.Offset + delta.Y)
-                
-                Main.Size = UDim2.new(0, newX, 0, newY)
-                -- Fix: Move position by half the size difference to keep top-left pinned
-                Main.Position = UDim2.new(
-                    startPosDrag.X.Scale, startPosDrag.X.Offset + (newX - startSize.X.Offset)/2,
-                    startPosDrag.Y.Scale, startPosDrag.Y.Offset + (newY - startSize.Y.Offset)/2
-                )
-            end
+
+UserInputService.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        if dragging then
+            local delta = input.Position - dragStart
+            Main.Position = UDim2.new(startPosDrag.X.Scale, startPosDrag.X.Offset + delta.X, startPosDrag.Y.Scale, startPosDrag.Y.Offset + delta.Y)
+        
+        elseif draggingSize then
+            local delta = input.Position - dragStart
+            
+            local newSizeX = math.max(300, startSize.X.Offset + delta.X)
+            local newSizeY = math.max(200, startSize.Y.Offset + delta.Y)
+
+            Main.Size = UDim2.new(0, newSizeX, 0, newSizeY)
+
+            local changeX = (newSizeX - startSize.X.Offset) / 2
+            local changeY = (newSizeY - startSize.Y.Offset) / 2
+
+            Main.Position = UDim2.new(
+                startPosDrag.X.Scale, 
+                startPosDrag.X.Offset + changeX, 
+                startPosDrag.Y.Scale, 
+                startPosDrag.Y.Offset + changeY
+            )
         end
-    end)
+    end
+end)
 
     UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
