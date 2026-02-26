@@ -247,40 +247,72 @@ function BMLibrary:CreateWindow(title)
             end)
         end
 
-        -- NEW FEATURE: CreateCheckbox
-        function Elements:CreateCheckbox(text, default, callback)
-            local state = default or false
-            local Container = Instance.new("TextButton", Page)
-            Container.Size, Container.BackgroundTransparency, Container.Text = UDim2.new(1, -5, 0, 30), 1, ""
-            
-            local Label = Instance.new("TextLabel", Container)
-            Label.Size, Label.BackgroundTransparency, Label.Text = UDim2.new(1, -35, 1, 0), 1, text
-            Label.TextColor3, Label.Font, Label.TextSize, Label.TextXAlignment = Color3.new(1,1,1), Enum.Font.GothamSemibold, 13, Enum.TextXAlignment.Left
-            
-            local Box = Instance.new("Frame", Container)
-            Box.Size, Box.Position, Box.BackgroundColor3 = UDim2.new(0, 20, 0, 20), UDim2.new(1, -22, 0.5, -10), ELEMENT_BG
-            Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 4)
-            
-            local Stroke = Instance.new("UIStroke", Box)
-            Stroke.Thickness, Stroke.Color = 1, Color3.fromRGB(60, 60, 65)
+       function Elements:CreateCheckbox(text, default, callback)
+    local state = default or false
+    local Container = Instance.new("TextButton", Page)
+    Container.Size = UDim2.new(1, -5, 0, 32) -- Full height to prevent overlapping
+    Container.BackgroundTransparency = 1
+    Container.Text = ""
+    
+    local Label = Instance.new("TextLabel", Container)
+    Label.Size = UDim2.new(1, -35, 1, 0)
+    Label.BackgroundTransparency = 1
+    Label.Text = text
+    Label.TextColor3 = Color3.new(1,1,1)
+    Label.Font = Enum.Font.GothamSemibold
+    Label.TextSize = 13
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local Box = Instance.new("Frame", Container)
+    Box.Size = UDim2.new(0, 20, 0, 20)
+    Box.Position = UDim2.new(1, -22, 0.5, -10)
+    Box.BackgroundColor3 = ELEMENT_BG
+    Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 4)
+    
+    local Stroke = Instance.new("UIStroke", Box)
+    Stroke.Thickness = 1
+    Stroke.Color = Color3.fromRGB(60, 60, 65)
 
-            local CheckMark = Instance.new("TextLabel", Box)
-            CheckMark.Size, CheckMark.BackgroundTransparency, CheckMark.Text = UDim2.new(1, 0, 1, 0), 1, "✓"
-            CheckMark.TextColor3, CheckMark.Font, CheckMark.TextSize = THEME_COLOR, Enum.Font.GothamBold, 14
-            CheckMark.TextTransparency = state and 0 or 1
+    local CheckMark = Instance.new("TextLabel", Box)
+    CheckMark.Size = UDim2.new(1, 0, 1, 0)
+    CheckMark.BackgroundTransparency = 1
+    CheckMark.Text = "✓"
+    CheckMark.TextColor3 = THEME_COLOR
+    CheckMark.Font = Enum.Font.GothamBold
+    CheckMark.TextSize = 14
+    CheckMark.TextTransparency = state and 0 or 1
+    CheckMark.Rotation = state and 0 or -45 -- Initial rotation for animation
 
-            local function Update()
-                TweenService:Create(CheckMark, TweenInfo.new(0.2), {TextTransparency = state and 0 or 1}):Play()
-                TweenService:Create(Stroke, TweenInfo.new(0.2), {Color = state and THEME_COLOR or Color3.fromRGB(60, 60, 65)}):Play()
-                if callback then callback(state) end
-            end
+    local function Update()
+        -- Pop Animation
+        Box.Size = UDim2.new(0, 16, 0, 16) -- Shrink
+        TweenService:Create(Box, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Size = UDim2.new(0, 20, 0, 20)}):Play() -- Pop back
+        
+        -- Checkmark Animation
+        local targetTransparency = state and 0 or 1
+        local targetRotation = state and 0 or -45
+        
+        TweenService:Create(CheckMark, TweenInfo.new(0.2), {
+            TextTransparency = targetTransparency,
+            Rotation = targetRotation
+        }):Play()
+        
+        TweenService:Create(Stroke, TweenInfo.new(0.2), {
+            Color = state and THEME_COLOR or Color3.fromRGB(60, 60, 65)
+        }):Play()
 
-            Container.MouseButton1Click:Connect(function()
-                state = not state
-                Update()
-            end)
-            Update()
-        end
+        if callback then callback(state) end
+    end
+
+    Container.MouseButton1Click:Connect(function()
+        state = not state
+        Update()
+    end)
+    
+    -- Set initial state without running full animation instantly
+    CheckMark.TextTransparency = state and 0 or 1
+    Stroke.Color = state and THEME_COLOR or Color3.fromRGB(60, 60, 65)
+end
 
         function Elements:CreateButton(text, callback)
             local Btn = Instance.new("TextButton", Page)
