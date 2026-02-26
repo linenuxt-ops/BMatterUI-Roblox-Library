@@ -136,11 +136,11 @@ function BMLibrary:CreateWindow(title)
         end
     end)
 
-    UserInputService.InputChanged:Connect(function(input)
+    UUserInputService.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement then
             if draggingSize then
                 local delta = input.Position - startPos
-                Main.Size = UDim2.new(0, math.max(300, startSize.X.Offset + delta.X), 0, math.max(200, startSize.Y.Offset + delta.Y))
+                Main.Size = UDim2.new(0, math.max(300, startSize.X.Offset + (delta.X * 2)), 0, math.max(200, startSize.Y.Offset + (delta.Y * 2)))
             elseif dragging then
                 local delta = input.Position - dragStart
                 Main.Position = UDim2.new(startPosDrag.X.Scale, startPosDrag.X.Offset + delta.X, startPosDrag.Y.Scale, startPosDrag.Y.Offset + delta.Y)
