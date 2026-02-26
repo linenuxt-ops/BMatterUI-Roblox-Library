@@ -40,15 +40,16 @@ function BMLibrary:CreateWindow(title)
     Main.Name = "Main"
     Main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
     Main.BorderSizePixel = 0
-    Main.Position = UDim2.new(0.5, 0, 0.5, 0) -- Centered for animation
+    -- Positioned at center with AnchorPoint for the scale animation
+    Main.Position = UDim2.new(0.5, 0, 0.5, 0)
     Main.AnchorPoint = Vector2.new(0.5, 0.5)
-    Main.Size = UDim2.new(0, 0, 0, 0) -- Start at 0 for Intro
+    Main.Size = UDim2.new(0, 0, 0, 0) -- Start at 0 for animation
     Main.Active = true
     Main.ClipsDescendants = true
     Main.BackgroundTransparency = 1
 
-    -- Intro Animation
-    TweenService:Create(Main, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+    -- Intro Animation: Scale up with "Back" easing for a springy feel
+    TweenService:Create(Main, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
         Size = UDim2.new(0, 450, 0, 300),
         BackgroundTransparency = 0
     }):Play()
@@ -118,7 +119,7 @@ function BMLibrary:CreateWindow(title)
     PageFolder.Size = UDim2.new(1, -140, 1, -55)
     PageFolder.BackgroundTransparency = 1
 
-    -- Logic for Dragging and Resizing
+    -- Logic: Draggable and Resizable
     local draggingSize, dragging = false, false
     local startPos, startSize, dragStart, startPosDrag
 
@@ -219,6 +220,42 @@ function BMLibrary:CreateWindow(title)
             end
         end
 
+        function Elements:CreateInput(text, placeholder, callback)
+            local Container = Instance.new("Frame", Page)
+            Container.Size, Container.BackgroundTransparency = UDim2.new(1, -5, 0, 32), 1
+            
+            local Label = Instance.new("TextLabel", Container)
+            Label.Size = UDim2.new(0.4, 0, 1, 0)
+            Label.BackgroundTransparency = 1
+            Label.Text = text
+            Label.TextColor3 = Color3.new(1, 1, 1)
+            Label.Font, Label.TextSize, Label.TextXAlignment = Enum.Font.GothamSemibold, 13, Enum.TextXAlignment.Left
+
+            local BoxContainer = Instance.new("Frame", Container)
+            BoxContainer.Size = UDim2.new(0.55, 0, 0, 28)
+            BoxContainer.Position = UDim2.new(1, 0, 0.5, 0)
+            BoxContainer.AnchorPoint = Vector2.new(1, 0.5)
+            BoxContainer.BackgroundColor3 = ELEMENT_BG
+            Instance.new("UICorner", BoxContainer).CornerRadius = UDim.new(0, 4)
+            
+            local Stroke = Instance.new("UIStroke", BoxContainer)
+            Stroke.Thickness, Stroke.Color, Stroke.ApplyStrokeMode = 1, Color3.fromRGB(45, 45, 50), Enum.ApplyStrokeMode.Border
+
+            local Box = Instance.new("TextBox", BoxContainer)
+            Box.Size = UDim2.new(1, -10, 1, 0)
+            Box.Position = UDim2.new(0, 5, 0, 0)
+            Box.BackgroundTransparency = 1
+            Box.Text, Box.PlaceholderText = "", placeholder or "..."
+            Box.TextColor3, Box.Font, Box.TextSize = Color3.new(1, 1, 1), Enum.Font.GothamSemibold, 12
+            Box.ClearTextOnFocus = false
+
+            Box.Focused:Connect(function() TweenService:Create(Stroke, TweenInfo.new(0.2), {Color = THEME_COLOR}):Play() end)
+            Box.FocusLost:Connect(function() 
+                TweenService:Create(Stroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(45, 45, 50)}):Play() 
+                if callback then callback(Box.Text) end 
+            end)
+        end
+
         function Elements:CreateCheckbox(text, default, callback)
             local state = default or false
             local Container = Instance.new("TextButton", Page)
@@ -256,16 +293,17 @@ function BMLibrary:CreateWindow(title)
             CheckMark.Rotation = state and 0 or -45
 
             local function Update()
-                -- Pop Animation
+                -- Pop effect for the box
                 Box.Size = UDim2.new(0, 16, 0, 16)
                 TweenService:Create(Box, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Size = UDim2.new(0, 20, 0, 20)}):Play()
                 
-                -- Visual transition
+                -- Checkmark fade and rotate
                 TweenService:Create(CheckMark, TweenInfo.new(0.2), {
                     TextTransparency = state and 0 or 1,
                     Rotation = state and 0 or -45
                 }):Play()
                 
+                -- Border color shift
                 TweenService:Create(Stroke, TweenInfo.new(0.2), {
                     Color = state and THEME_COLOR or Color3.fromRGB(60, 60, 65)
                 }):Play()
@@ -278,8 +316,9 @@ function BMLibrary:CreateWindow(title)
                 Update()
             end)
             
-            -- Initial State (no animation)
+            -- Set initial visuals without triggering the "Pop" animation
             CheckMark.TextTransparency = state and 0 or 1
+            CheckMark.Rotation = state and 0 or -45
             Stroke.Color = state and THEME_COLOR or Color3.fromRGB(60, 60, 65)
         end
 
