@@ -40,10 +40,18 @@ function BMLibrary:CreateWindow(title)
     Main.Name = "Main"
     Main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
     Main.BorderSizePixel = 0
-    Main.Position = UDim2.new(0.5, -225, 0.5, -150)
-    Main.Size = UDim2.new(0, 450, 0, 300)
+    Main.Position = UDim2.new(0.5, 0, 0.5, 0) -- Centered for animation
+    Main.AnchorPoint = Vector2.new(0.5, 0.5)
+    Main.Size = UDim2.new(0, 0, 0, 0) -- Start at 0 for Intro
     Main.Active = true
     Main.ClipsDescendants = true
+    Main.BackgroundTransparency = 1
+
+    -- Intro Animation
+    TweenService:Create(Main, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Size = UDim2.new(0, 450, 0, 300),
+        BackgroundTransparency = 0
+    }):Play()
 
     -- Resize Icon
     local ResizeIcon = Instance.new("TextLabel", Main)
@@ -110,7 +118,7 @@ function BMLibrary:CreateWindow(title)
     PageFolder.Size = UDim2.new(1, -140, 1, -55)
     PageFolder.BackgroundTransparency = 1
 
-    -- Logic
+    -- Logic for Dragging and Resizing
     local draggingSize, dragging = false, false
     local startPos, startSize, dragStart, startPosDrag
 
@@ -211,108 +219,69 @@ function BMLibrary:CreateWindow(title)
             end
         end
 
-        function Elements:CreateInput(text, placeholder, callback)
-            local Container = Instance.new("Frame", Page)
-            Container.Size, Container.BackgroundTransparency = UDim2.new(1, -5, 0, 32), 1
+        function Elements:CreateCheckbox(text, default, callback)
+            local state = default or false
+            local Container = Instance.new("TextButton", Page)
+            Container.Size = UDim2.new(1, -5, 0, 32)
+            Container.BackgroundTransparency = 1
+            Container.Text = ""
             
             local Label = Instance.new("TextLabel", Container)
-            Label.Size = UDim2.new(0.4, 0, 1, 0)
+            Label.Size = UDim2.new(1, -35, 1, 0)
             Label.BackgroundTransparency = 1
             Label.Text = text
-            Label.TextColor3 = Color3.new(1, 1, 1)
-            Label.Font, Label.TextSize, Label.TextXAlignment = Enum.Font.GothamSemibold, 13, Enum.TextXAlignment.Left
-
-            local BoxContainer = Instance.new("Frame", Container)
-            BoxContainer.Size = UDim2.new(0.55, 0, 0, 28)
-            BoxContainer.Position = UDim2.new(1, 0, 0.5, 0)
-            BoxContainer.AnchorPoint = Vector2.new(1, 0.5)
-            BoxContainer.BackgroundColor3 = ELEMENT_BG
-            Instance.new("UICorner", BoxContainer).CornerRadius = UDim.new(0, 4)
+            Label.TextColor3 = Color3.new(1,1,1)
+            Label.Font = Enum.Font.GothamSemibold
+            Label.TextSize = 13
+            Label.TextXAlignment = Enum.TextXAlignment.Left
             
-            local Stroke = Instance.new("UIStroke", BoxContainer)
-            Stroke.Thickness, Stroke.Color, Stroke.ApplyStrokeMode = 1, Color3.fromRGB(45, 45, 50), Enum.ApplyStrokeMode.Border
+            local Box = Instance.new("Frame", Container)
+            Box.Size = UDim2.new(0, 20, 0, 20)
+            Box.Position = UDim2.new(1, -22, 0.5, -10)
+            Box.BackgroundColor3 = ELEMENT_BG
+            Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 4)
+            
+            local Stroke = Instance.new("UIStroke", Box)
+            Stroke.Thickness = 1
+            Stroke.Color = Color3.fromRGB(60, 60, 65)
 
-            local Box = Instance.new("TextBox", BoxContainer)
-            Box.Size = UDim2.new(1, -10, 1, 0)
-            Box.Position = UDim2.new(0, 5, 0, 0)
-            Box.BackgroundTransparency = 1
-            Box.Text, Box.PlaceholderText = "", placeholder or "..."
-            Box.TextColor3, Box.Font, Box.TextSize = Color3.new(1, 1, 1), Enum.Font.GothamSemibold, 12
-            Box.ClearTextOnFocus = false
+            local CheckMark = Instance.new("TextLabel", Box)
+            CheckMark.Size = UDim2.new(1, 0, 1, 0)
+            CheckMark.BackgroundTransparency = 1
+            CheckMark.Text = "✓"
+            CheckMark.TextColor3 = THEME_COLOR
+            CheckMark.Font = Enum.Font.GothamBold
+            CheckMark.TextSize = 14
+            CheckMark.TextTransparency = state and 0 or 1
+            CheckMark.Rotation = state and 0 or -45
 
-            Box.Focused:Connect(function() TweenService:Create(Stroke, TweenInfo.new(0.2), {Color = THEME_COLOR}):Play() end)
-            Box.FocusLost:Connect(function() 
-                TweenService:Create(Stroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(45, 45, 50)}):Play() 
-                if callback then callback(Box.Text) end 
+            local function Update()
+                -- Pop Animation
+                Box.Size = UDim2.new(0, 16, 0, 16)
+                TweenService:Create(Box, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Size = UDim2.new(0, 20, 0, 20)}):Play()
+                
+                -- Visual transition
+                TweenService:Create(CheckMark, TweenInfo.new(0.2), {
+                    TextTransparency = state and 0 or 1,
+                    Rotation = state and 0 or -45
+                }):Play()
+                
+                TweenService:Create(Stroke, TweenInfo.new(0.2), {
+                    Color = state and THEME_COLOR or Color3.fromRGB(60, 60, 65)
+                }):Play()
+
+                if callback then callback(state) end
+            end
+
+            Container.MouseButton1Click:Connect(function()
+                state = not state
+                Update()
             end)
+            
+            -- Initial State (no animation)
+            CheckMark.TextTransparency = state and 0 or 1
+            Stroke.Color = state and THEME_COLOR or Color3.fromRGB(60, 60, 65)
         end
-
-       function Elements:CreateCheckbox(text, default, callback)
-    local state = default or false
-    local Container = Instance.new("TextButton", Page)
-    Container.Size = UDim2.new(1, -5, 0, 32) -- Full height to prevent overlapping
-    Container.BackgroundTransparency = 1
-    Container.Text = ""
-    
-    local Label = Instance.new("TextLabel", Container)
-    Label.Size = UDim2.new(1, -35, 1, 0)
-    Label.BackgroundTransparency = 1
-    Label.Text = text
-    Label.TextColor3 = Color3.new(1,1,1)
-    Label.Font = Enum.Font.GothamSemibold
-    Label.TextSize = 13
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    
-    local Box = Instance.new("Frame", Container)
-    Box.Size = UDim2.new(0, 20, 0, 20)
-    Box.Position = UDim2.new(1, -22, 0.5, -10)
-    Box.BackgroundColor3 = ELEMENT_BG
-    Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 4)
-    
-    local Stroke = Instance.new("UIStroke", Box)
-    Stroke.Thickness = 1
-    Stroke.Color = Color3.fromRGB(60, 60, 65)
-
-    local CheckMark = Instance.new("TextLabel", Box)
-    CheckMark.Size = UDim2.new(1, 0, 1, 0)
-    CheckMark.BackgroundTransparency = 1
-    CheckMark.Text = "✓"
-    CheckMark.TextColor3 = THEME_COLOR
-    CheckMark.Font = Enum.Font.GothamBold
-    CheckMark.TextSize = 14
-    CheckMark.TextTransparency = state and 0 or 1
-    CheckMark.Rotation = state and 0 or -45 -- Initial rotation for animation
-
-    local function Update()
-        -- Pop Animation
-        Box.Size = UDim2.new(0, 16, 0, 16) -- Shrink
-        TweenService:Create(Box, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Size = UDim2.new(0, 20, 0, 20)}):Play() -- Pop back
-        
-        -- Checkmark Animation
-        local targetTransparency = state and 0 or 1
-        local targetRotation = state and 0 or -45
-        
-        TweenService:Create(CheckMark, TweenInfo.new(0.2), {
-            TextTransparency = targetTransparency,
-            Rotation = targetRotation
-        }):Play()
-        
-        TweenService:Create(Stroke, TweenInfo.new(0.2), {
-            Color = state and THEME_COLOR or Color3.fromRGB(60, 60, 65)
-        }):Play()
-
-        if callback then callback(state) end
-    end
-
-    Container.MouseButton1Click:Connect(function()
-        state = not state
-        Update()
-    end)
-    
-    -- Set initial state without running full animation instantly
-    CheckMark.TextTransparency = state and 0 or 1
-    Stroke.Color = state and THEME_COLOR or Color3.fromRGB(60, 60, 65)
-end
 
         function Elements:CreateButton(text, callback)
             local Btn = Instance.new("TextButton", Page)
