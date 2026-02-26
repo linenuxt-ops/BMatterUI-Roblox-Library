@@ -1,5 +1,5 @@
 local BMLibrary = {
-    Version = 3.4
+    Version = 3.5
 }
 
 local CoreGui = game:GetService("CoreGui")
@@ -193,7 +193,6 @@ function BMLibrary:CreateWindow(title)
 
         local Elements = {}
 
-        -- NEW FEATURE: CreateLabel with Alignment
         function Elements:CreateLabel(text, align)
             local Label = Instance.new("TextLabel", Page)
             Label.Size = UDim2.new(1, -5, 0, 20)
@@ -212,7 +211,6 @@ function BMLibrary:CreateWindow(title)
             end
         end
 
-        -- UPDATED FEATURE: Same-line CreateInput
         function Elements:CreateInput(text, placeholder, callback)
             local Container = Instance.new("Frame", Page)
             Container.Size, Container.BackgroundTransparency = UDim2.new(1, -5, 0, 32), 1
@@ -247,6 +245,41 @@ function BMLibrary:CreateWindow(title)
                 TweenService:Create(Stroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(45, 45, 50)}):Play() 
                 if callback then callback(Box.Text) end 
             end)
+        end
+
+        -- NEW FEATURE: CreateCheckbox
+        function Elements:CreateCheckbox(text, default, callback)
+            local state = default or false
+            local Container = Instance.new("TextButton", Page)
+            Container.Size, Container.BackgroundTransparency, Container.Text = UDim2.new(1, -5, 0, 30), 1, ""
+            
+            local Label = Instance.new("TextLabel", Container)
+            Label.Size, Label.BackgroundTransparency, Label.Text = UDim2.new(1, -35, 1, 0), 1, text
+            Label.TextColor3, Label.Font, Label.TextSize, Label.TextXAlignment = Color3.new(1,1,1), Enum.Font.GothamSemibold, 13, Enum.TextXAlignment.Left
+            
+            local Box = Instance.new("Frame", Container)
+            Box.Size, Box.Position, Box.BackgroundColor3 = UDim2.new(0, 20, 0, 20), UDim2.new(1, -22, 0.5, -10), ELEMENT_BG
+            Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 4)
+            
+            local Stroke = Instance.new("UIStroke", Box)
+            Stroke.Thickness, Stroke.Color = 1, Color3.fromRGB(60, 60, 65)
+
+            local CheckMark = Instance.new("TextLabel", Box)
+            CheckMark.Size, CheckMark.BackgroundTransparency, CheckMark.Text = UDim2.new(1, 0, 1, 0), 1, "✓"
+            CheckMark.TextColor3, CheckMark.Font, CheckMark.TextSize = THEME_COLOR, Enum.Font.GothamBold, 14
+            CheckMark.TextTransparency = state and 0 or 1
+
+            local function Update()
+                TweenService:Create(CheckMark, TweenInfo.new(0.2), {TextTransparency = state and 0 or 1}):Play()
+                TweenService:Create(Stroke, TweenInfo.new(0.2), {Color = state and THEME_COLOR or Color3.fromRGB(60, 60, 65)}):Play()
+                if callback then callback(state) end
+            end
+
+            Container.MouseButton1Click:Connect(function()
+                state = not state
+                Update()
+            end)
+            Update()
         end
 
         function Elements:CreateButton(text, callback)
