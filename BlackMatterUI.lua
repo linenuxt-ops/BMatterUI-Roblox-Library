@@ -270,6 +270,8 @@ function BMLibrary:CreateWindow(title)
                 end
             end
             Page.Visible, TabBtn.BackgroundColor3, TabBtn.TextColor3 = true, Color3.fromRGB(40, 35, 50), Color3.new(1, 1, 1)
+            -- Reset search cache when changing tabs
+            if _G.LastSearchQuery then _G.LastSearchQuery = "" end
         end
 
         TabBtn.MouseButton1Click:Connect(Switch)
@@ -331,72 +333,62 @@ function BMLibrary:CreateWindow(title)
             end)
         end
 
-       function Elements:CreateCheckbox(text, default, callback)
-    local state = default or false
-    local Container = Instance.new("TextButton", Page)
-    Container.Size = UDim2.new(1, -5, 0, 32) -- Full height to prevent overlapping
-    Container.BackgroundTransparency = 1
-    Container.Text = ""
-    
-    local Label = Instance.new("TextLabel", Container)
-    Label.Size = UDim2.new(1, -35, 1, 0)
-    Label.BackgroundTransparency = 1
-    Label.Text = text
-    Label.TextColor3 = Color3.new(1,1,1)
-    Label.Font = Enum.Font.GothamSemibold
-    Label.TextSize = 13
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    
-    local Box = Instance.new("Frame", Container)
-    Box.Size = UDim2.new(0, 20, 0, 20)
-    Box.Position = UDim2.new(1, -22, 0.5, -10)
-    Box.BackgroundColor3 = ELEMENT_BG
-    Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 4)
-    
-    local Stroke = Instance.new("UIStroke", Box)
-    Stroke.Thickness = 1
-    Stroke.Color = Color3.fromRGB(60, 60, 65)
+        function Elements:CreateCheckbox(text, default, callback)
+            local state = default or false
+            local Container = Instance.new("TextButton", Page)
+            Container.Size = UDim2.new(1, -5, 0, 32)
+            Container.BackgroundTransparency = 1
+            Container.Text = ""
+            
+            local Label = Instance.new("TextLabel", Container)
+            Label.Size = UDim2.new(1, -35, 1, 0)
+            Label.BackgroundTransparency = 1
+            Label.Text = text
+            Label.TextColor3 = Color3.new(1,1,1)
+            Label.Font = Enum.Font.GothamSemibold
+            Label.TextSize = 13
+            Label.TextXAlignment = Enum.TextXAlignment.Left
+            
+            local Box = Instance.new("Frame", Container)
+            Box.Size = UDim2.new(0, 20, 0, 20)
+            Box.Position = UDim2.new(1, -22, 0.5, -10)
+            Box.BackgroundColor3 = ELEMENT_BG
+            Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 4)
+            
+            local Stroke = Instance.new("UIStroke", Box)
+            Stroke.Thickness, Stroke.Color = 1, Color3.fromRGB(60, 60, 65)
 
-    local CheckMark = Instance.new("TextLabel", Box)
-    CheckMark.Size = UDim2.new(1, 0, 1, 0)
-    CheckMark.BackgroundTransparency = 1
-    CheckMark.Text = "✓"
-    CheckMark.TextColor3 = THEME_COLOR
-    CheckMark.Font = Enum.Font.GothamBold
-    CheckMark.TextSize = 14
-    CheckMark.TextTransparency = state and 0 or 1
-    CheckMark.Rotation = state and 0 or -45 -- Initial rotation for animation
+            local CheckMark = Instance.new("TextLabel", Box)
+            CheckMark.Size = UDim2.new(1, 0, 1, 0)
+            CheckMark.BackgroundTransparency = 1
+            CheckMark.Text = "✓"
+            CheckMark.TextColor3 = THEME_COLOR
+            CheckMark.Font = Enum.Font.GothamBold
+            CheckMark.TextSize = 14
+            CheckMark.TextTransparency = state and 0 or 1
+            CheckMark.Rotation = state and 0 or -45
 
-    local function Update()
-        -- Pop Animation
-        Box.Size = UDim2.new(0, 16, 0, 16) -- Shrink
-        TweenService:Create(Box, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Size = UDim2.new(0, 20, 0, 20)}):Play() -- Pop back
-        
-        -- Checkmark Animation
-        local targetTransparency = state and 0 or 1
-        local targetRotation = state and 0 or -45
-        
-        TweenService:Create(CheckMark, TweenInfo.new(0.2), {
-            TextTransparency = targetTransparency,
-            Rotation = targetRotation
-        }):Play()
-        
-        TweenService:Create(Stroke, TweenInfo.new(0.2), {
-            Color = state and THEME_COLOR or Color3.fromRGB(60, 60, 65)
-        }):Play()
+            local function Update()
+                Box.Size = UDim2.new(0, 16, 0, 16)
+                TweenService:Create(Box, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Size = UDim2.new(0, 20, 0, 20)}):Play()
+                
+                TweenService:Create(CheckMark, TweenInfo.new(0.2), {
+                    TextTransparency = state and 0 or 1,
+                    Rotation = state and 0 or -45
+                }):Play()
+                
+                TweenService:Create(Stroke, TweenInfo.new(0.2), {
+                    Color = state and THEME_COLOR or Color3.fromRGB(60, 60, 65)
+                }):Play()
 
-        if callback then callback(state) end
-    end
+                if callback then callback(state) end
+            end
 
-    Container.MouseButton1Click:Connect(function()
-        state = not state
-        Update()
-    end)
-    
-    -- Set initial state without running full animation instantly
-    CheckMark.TextTransparency = state and 0 or 1
-    Stroke.Color = state and THEME_COLOR or Color3.fromRGB(60, 60, 65)
-end
+            Container.MouseButton1Click:Connect(function()
+                state = not state
+                Update()
+            end)
+        end
 
         function Elements:CreateButton(text, callback)
             local Btn = Instance.new("TextButton", Page)
@@ -414,12 +406,15 @@ end
             local Label = Instance.new("TextLabel", Container)
             Label.Size, Label.BackgroundTransparency, Label.Text = UDim2.new(1, -50, 1, 0), 1, text
             Label.TextColor3, Label.Font, Label.TextSize, Label.TextXAlignment = Color3.new(1,1,1), Enum.Font.GothamSemibold, 13, Enum.TextXAlignment.Left
+            
             local Outer = Instance.new("Frame", Container)
             Outer.Size, Outer.Position, Outer.BackgroundColor3 = UDim2.new(0, 38, 0, 20), UDim2.new(1, -40, 0.5, -10), TOGGLE_OFF
             Instance.new("UICorner", Outer).CornerRadius = UDim.new(1, 0)
+            
             local Inner = Instance.new("Frame", Outer)
             Inner.Size, Inner.Position, Inner.BackgroundColor3 = UDim2.new(0, 14, 0, 14), UDim2.new(0, 3, 0.5, -7), Color3.new(1,1,1)
             Instance.new("UICorner", Inner).CornerRadius = UDim.new(1, 0)
+            
             local function Update()
                 local targetPos = state and UDim2.new(0, 21, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
                 TweenService:Create(Inner, TweenInfo.new(0.2), {Position = targetPos}):Play()
@@ -433,19 +428,24 @@ end
         function Elements:CreateSlider(text, min, max, default, callback)
             local SliderFrame = Instance.new("Frame", Page)
             SliderFrame.Size, SliderFrame.BackgroundTransparency = UDim2.new(1, -5, 0, 50), 1
+            
             local Label = Instance.new("TextLabel", SliderFrame)
             Label.Size, Label.BackgroundTransparency, Label.Text = UDim2.new(1, 0, 0, 20), 1, text
             Label.TextColor3, Label.Font, Label.TextSize, Label.TextXAlignment = Color3.new(1,1,1), Enum.Font.GothamSemibold, 13, Enum.TextXAlignment.Left
+            
             local ValueLabel = Instance.new("TextLabel", SliderFrame)
             ValueLabel.Size, ValueLabel.BackgroundTransparency, ValueLabel.Text = UDim2.new(1, 0, 0, 20), 1, tostring(default)
             ValueLabel.TextColor3, ValueLabel.Font, ValueLabel.TextSize, ValueLabel.TextXAlignment = Color3.fromRGB(200, 200, 200), Enum.Font.GothamSemibold, 12, Enum.TextXAlignment.Right
+            
             local SliderBack = Instance.new("Frame", SliderFrame)
             SliderBack.Size, SliderBack.Position, SliderBack.BackgroundColor3 = UDim2.new(1, 0, 0, 6), UDim2.new(0, 0, 0, 30), SLIDER_BG
             Instance.new("UICorner", SliderBack).CornerRadius = UDim.new(0, 4)
+            
             local SliderFill = Instance.new("Frame", SliderBack)
             SliderFill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
             SliderFill.BackgroundColor3 = THEME_COLOR
             Instance.new("UICorner", SliderFill).CornerRadius = UDim.new(0, 4)
+            
             local function Update(input)
                 local pos = math.clamp((input.Position.X - SliderBack.AbsolutePosition.X) / SliderBack.AbsoluteSize.X, 0, 1)
                 local val = math.floor(min + (max - min) * pos)
@@ -453,6 +453,7 @@ end
                 ValueLabel.Text = tostring(val)
                 if callback then callback(val) end
             end
+            
             local sdragging = false
             SliderBack.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then sdragging = true Update(input) end end)
             UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then sdragging = false end end)
