@@ -40,11 +40,10 @@ function BMLibrary:CreateWindow(title)
     Main.Name = "Main"
     Main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
     Main.BorderSizePixel = 0
-    -- Start at center, scale 0, and invisible
     Main.AnchorPoint = Vector2.new(0.5, 0.5)
     Main.Position = UDim2.new(0.5, 0, 0.5, 0)
-    Main.Size = UDim2.new(0, 0, 0, 0)
-    Main.GroupTransparency = 1
+    Main.Size = UDim2.new(0, 0, 0, 0) -- Start small
+    Main.GroupTransparency = 1 -- Start invisible
     Main.Active = true
     Main.ClipsDescendants = true
 
@@ -133,14 +132,23 @@ function BMLibrary:CreateWindow(title)
             draggingSize = true
             startPos = input.Position
             startSize = Main.Size
+            startPosDrag = Main.Position -- Track center position for offset fix
         end
     end)
 
-    UUserInputService.InputChanged:Connect(function(input)
+    UserInputService.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement then
             if draggingSize then
                 local delta = input.Position - startPos
-                Main.Size = UDim2.new(0, math.max(300, startSize.X.Offset + (delta.X * 2)), 0, math.max(200, startSize.Y.Offset + (delta.Y * 2)))
+                local newSizeX = math.max(300, startSize.X.Offset + delta.X)
+                local newSizeY = math.max(200, startSize.Y.Offset + delta.Y)
+                
+                Main.Size = UDim2.new(0, newSizeX, 0, newSizeY)
+                
+                -- Offset fix: Since Anchor is 0.5, we move the center by half the size change
+                local offsetX = (newSizeX - startSize.X.Offset) / 2
+                local offsetY = (newSizeY - startSize.Y.Offset) / 2
+                Main.Position = UDim2.new(startPosDrag.X.Scale, startPosDrag.X.Offset + offsetX, startPosDrag.Y.Scale, startPosDrag.Y.Offset + offsetY)
             elseif dragging then
                 local delta = input.Position - dragStart
                 Main.Position = UDim2.new(startPosDrag.X.Scale, startPosDrag.X.Offset + delta.X, startPosDrag.Y.Scale, startPosDrag.Y.Offset + delta.Y)
@@ -156,14 +164,29 @@ function BMLibrary:CreateWindow(title)
         end
     end)
 
-    -- Intro Animation Execution
+    -- Toggle Logic
+    local toggled = true
+    UserInputService.InputBegan:Connect(function(input, gpe)
+        if not gpe and input.KeyCode == Enum.KeyCode.RightControl then
+            toggled = not toggled
+            local targetSize = toggled and UDim2.new(0, Main.Size.X.Offset, 0, Main.Size.Y.Offset) or UDim2.new(0, 0, 0, 0)
+            local targetTrans = toggled and 0 or 1
+            
+            TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                Size = targetSize,
+                GroupTransparency = targetTrans
+            }):Play()
+        end
+    end)
+
+    -- Intro Animation
     TweenService:Create(Main, TweenInfo.new(0.6, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
         Size = UDim2.new(0, 450, 0, 300),
         GroupTransparency = 0
     }):Play()
 
     local Tabs = { ActivePage = nil }
-
+    
     function Tabs:CreateCategory(name)
         local TabBtn = Instance.new("TextButton", Sidebar)
         TabBtn.Size = UDim2.new(1, -5, 0, 30)
