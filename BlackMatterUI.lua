@@ -35,15 +35,15 @@ function BMLibrary:CreateWindow(title)
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     ScreenGui:SetAttribute("BMLib_Version", self.Version)
 
-    -- Main Window (CanvasGroup for smooth fade-in)
+    -- Main Window
     local Main = Instance.new("CanvasGroup", ScreenGui)
     Main.Name = "Main"
     Main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
     Main.BorderSizePixel = 0
     Main.AnchorPoint = Vector2.new(0.5, 0.5)
     Main.Position = UDim2.new(0.5, 0, 0.5, 0)
-    Main.Size = UDim2.new(0, 0, 0, 0) -- Start small
-    Main.GroupTransparency = 1 -- Start invisible
+    Main.Size = UDim2.new(0, 0, 0, 0)
+    Main.GroupTransparency = 1
     Main.Active = true
     Main.ClipsDescendants = true
 
@@ -67,7 +67,7 @@ function BMLibrary:CreateWindow(title)
     ResizeHandle.Text = ""
     ResizeHandle.ZIndex = 100
 
-    -- Header Title (Drag Handle)
+    -- Header
     local TitleLabel = Instance.new("TextButton", Main)
     TitleLabel.Name = "TitleHandle"
     TitleLabel.BackgroundTransparency = 1
@@ -90,20 +90,33 @@ function BMLibrary:CreateWindow(title)
     VerticalLine.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
     VerticalLine.BorderSizePixel = 0
 
-    -- Sidebar
+    -- Sidebar (Scrollable)
     local Sidebar = Instance.new("ScrollingFrame", Main)
     Sidebar.Name = "Sidebar"
     Sidebar.Position = UDim2.new(0, 5, 0, 40)
-    Sidebar.Size = UDim2.new(0, 110, 1, -45)
+    Sidebar.Size = UDim2.new(0, 110, 1, -85) -- Shortened to make room for Search Box
     Sidebar.BackgroundTransparency = 1
     Sidebar.BorderSizePixel = 0
     Sidebar.ScrollBarThickness = 0
 
     local SidebarLayout = Instance.new("UIListLayout", Sidebar)
     SidebarLayout.Padding = UDim.new(0, 5)
-    SidebarLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        Sidebar.CanvasSize = UDim2.new(0, 0, 0, SidebarLayout.AbsoluteContentSize.Y)
-    end)
+
+    -- SEARCH BOX (At the bottom of Sidebar)
+    local SearchBox = Instance.new("TextBox", Main)
+    SearchBox.Name = "SearchBox"
+    SearchBox.Size = UDim2.new(0, 105, 0, 28)
+    SearchBox.Position = UDim2.new(0, 7, 1, -38)
+    SearchBox.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    SearchBox.TextColor3 = Color3.new(1, 1, 1)
+    SearchBox.Font = Enum.Font.Gotham
+    SearchBox.TextSize = 12
+    SearchBox.PlaceholderText = "Search..."
+    SearchBox.Text = ""
+    Instance.new("UICorner", SearchBox).CornerRadius = UDim.new(0, 4)
+    local SearchStroke = Instance.new("UIStroke", SearchBox)
+    SearchStroke.Color = Color3.fromRGB(45, 45, 50)
+    SearchStroke.Thickness = 1
 
     -- Page Container
     local PageFolder = Instance.new("Frame", Main)
@@ -112,7 +125,64 @@ function BMLibrary:CreateWindow(title)
     PageFolder.Size = UDim2.new(1, -140, 1, -55)
     PageFolder.BackgroundTransparency = 1
 
-    -- Logic
+    -- Logic for Search
+    local searchResults = {}
+    local searchIndex = 0
+    local lastSearch = ""
+
+    SearchBox.FocusLost:Connect(function(enterPressed)
+        if not enterPressed or SearchBox.Text == "" then return end
+        
+        local query = SearchBox.Text:lower()
+        local activePage = nil
+        
+        for _, p in pairs(PageFolder:GetChildren()) do
+            if p:IsA("ScrollingFrame") and p.Visible then activePage = p break end
+        end
+
+        if activePage then
+            if query ~= lastSearch then
+                lastSearch = query
+                searchResults = {}
+                searchIndex = 0
+                for _, child in pairs(activePage:GetChildren()) do
+                    -- Identify text in various element types
+                    local nameText = ""
+                    if child:IsA("TextButton") then nameText = child.Text
+                    elseif child:FindFirstChild("TextLabel") then nameText = child.TextLabel.Text 
+                    end
+                    
+                    if nameText:lower():find(query) then
+                        table.insert(searchResults, child)
+                    end
+                end
+            end
+
+            if #searchResults > 0 then
+                searchIndex = (searchIndex % #searchResults) + 1
+                local target = searchResults[searchIndex]
+                
+                -- Calculate scroll position
+                local targetY = target.Position.Y.Offset
+                TweenService:Create(activePage, TweenInfo.new(0.4), {CanvasPosition = Vector2.new(0, targetY)}):Play()
+                
+                -- Visual Highlight
+                local flash = Instance.new("Frame", target)
+                flash.Size = UDim2.new(1, 0, 1, 0)
+                flash.BackgroundColor3 = THEME_COLOR
+                flash.BackgroundTransparency = 0.6
+                Instance.new("UICorner", flash).CornerRadius = UDim.new(0, 4)
+                TweenService:Create(flash, TweenInfo.new(0.6), {BackgroundTransparency = 1}):Play()
+                game:GetService("Debris"):AddItem(flash, 0.6)
+            else
+                SearchBox.Text = ""
+                SearchBox.PlaceholderText = "Not Found"
+                task.delay(1, function() SearchBox.PlaceholderText = "Search..." end)
+            end
+        end
+    end)
+
+    -- Window Dragging & Resizing Logic
     local draggingSize, dragging = false, false
     local startPos, startSize, dragStart, startPosDrag
 
@@ -132,7 +202,7 @@ function BMLibrary:CreateWindow(title)
             draggingSize = true
             startPos = input.Position
             startSize = Main.Size
-            startPosDrag = Main.Position -- Track center position for offset fix
+            startPosDrag = Main.Position
         end
     end)
 
@@ -141,11 +211,8 @@ function BMLibrary:CreateWindow(title)
             if draggingSize then
                 local delta = input.Position - startPos
                 local newSizeX = math.max(300, startSize.X.Offset + delta.X)
-                local newSizeY = math.max(200, startSize.Y.Offset + delta.Y)
-                
+                local newSizeY = math.max(250, startSize.Y.Offset + delta.Y)
                 Main.Size = UDim2.new(0, newSizeX, 0, newSizeY)
-                
-                -- Offset fix: Since Anchor is 0.5, we move the center by half the size change
                 local offsetX = (newSizeX - startSize.X.Offset) / 2
                 local offsetY = (newSizeY - startSize.Y.Offset) / 2
                 Main.Position = UDim2.new(startPosDrag.X.Scale, startPosDrag.X.Offset + offsetX, startPosDrag.Y.Scale, startPosDrag.Y.Offset + offsetY)
@@ -161,21 +228,6 @@ function BMLibrary:CreateWindow(title)
             draggingSize = false
             dragging = false
             Mouse.Icon = ""
-        end
-    end)
-
-    -- Toggle Logic
-    local toggled = true
-    UserInputService.InputBegan:Connect(function(input, gpe)
-        if not gpe and input.KeyCode == Enum.KeyCode.RightControl then
-            toggled = not toggled
-            local targetSize = toggled and UDim2.new(0, Main.Size.X.Offset, 0, Main.Size.Y.Offset) or UDim2.new(0, 0, 0, 0)
-            local targetTrans = toggled and 0 or 1
-            
-            TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                Size = targetSize,
-                GroupTransparency = targetTrans
-            }):Play()
         end
     end)
 
