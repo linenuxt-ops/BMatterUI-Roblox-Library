@@ -35,15 +35,49 @@ function BMLibrary:CreateWindow(title)
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     ScreenGui:SetAttribute("BMLib_Version", self.Version)
 
-    -- Main Window
-    local Main = Instance.new("Frame", ScreenGui)
+    -- Main Window (Now a CanvasGroup for smooth fading)
+    local Main = Instance.new("CanvasGroup", ScreenGui)
     Main.Name = "Main"
     Main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
     Main.BorderSizePixel = 0
-    Main.Position = UDim2.new(0.5, -225, 0.5, -150)
+    -- Start slightly lower and invisible
+    local FinalPos = UDim2.new(0.5, -225, 0.5, -150)
+    Main.Position = UDim2.new(0.5, -225, 0.5, -100) 
     Main.Size = UDim2.new(0, 450, 0, 300)
     Main.Active = true
     Main.ClipsDescendants = true
+    Main.GroupTransparency = 1 -- Start hidden
+
+    local function PlayIntro()
+        -- 1. Create a temporary "Welcome" label for the tour feel
+        local WelcomeLabel = Instance.new("TextLabel", Main)
+        WelcomeLabel.Size = UDim2.new(1, 0, 1, 0)
+        WelcomeLabel.BackgroundTransparency = 1
+        WelcomeLabel.Font = Enum.Font.GothamBold
+        WelcomeLabel.Text = "Welcome to " .. (title or "BMLibrary")
+        WelcomeLabel.TextColor3 = THEME_COLOR
+        WelcomeLabel.TextSize = 24
+        WelcomeLabel.ZIndex = 100
+        WelcomeLabel.TextTransparency = 1
+
+        -- 2. Fade Window In & Slide Up
+        TweenService:Create(Main, TweenInfo.new(0.8, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            Position = FinalPos,
+            GroupTransparency = 0
+        }):Play()
+
+        -- 3. Quick Text Reveal
+        TweenService:Create(WelcomeLabel, TweenInfo.new(0.5), {TextTransparency = 0}):Play()
+        
+        task.delay(1.2, function()
+            TweenService:Create(WelcomeLabel, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+            task.wait(0.5)
+            WelcomeLabel:Destroy()
+        end)
+    end
+
+    -- Run the intro
+    task.spawn(PlayIntro)
 
     -- Resize Icon
     local ResizeIcon = Instance.new("TextLabel", Main)
