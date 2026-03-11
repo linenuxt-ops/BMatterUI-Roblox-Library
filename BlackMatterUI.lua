@@ -2,6 +2,9 @@ local BMLibrary = {
     Version = 3.5
 }
 
+local UI_Visible = true
+local HideKey = Enum.KeyCode.LeftControl
+
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -49,13 +52,18 @@ function BMLibrary:CreateWindow(title)
 
     -- Global Visibility Toggle (Left Control)
     local UI_Visible = true
-    UserInputService.InputBegan:Connect(function(input, gpe)
-        if gpe then return end
-        if input.KeyCode == Enum.KeyCode.LeftControl then
-            UI_Visible = not UI_Visible
-            Main.Visible = UI_Visible
-        end
-    end)
+    UUserInputService.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == HideKey then -- Uses the variable
+        UI_Visible = not UI_Visible
+        Main.Visible = UI_Visible
+    end
+end)
+
+-- This function allows the Keybinder element to update the HideKey
+function Tabs:SetHideKey(newKey)
+    HideKey = newKey
+end
 
     -- Resize Icon
     local ResizeIcon = Instance.new("TextLabel", Main)
