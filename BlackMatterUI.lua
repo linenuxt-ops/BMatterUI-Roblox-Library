@@ -47,6 +47,16 @@ function BMLibrary:CreateWindow(title)
     Main.Active = true
     Main.ClipsDescendants = true
 
+    -- Global Visibility Toggle (Left Control)
+    local UI_Visible = true
+    UserInputService.InputBegan:Connect(function(input, gpe)
+        if gpe then return end
+        if input.KeyCode == Enum.KeyCode.LeftControl then
+            UI_Visible = not UI_Visible
+            Main.Visible = UI_Visible
+        end
+    end)
+
     -- Resize Icon
     local ResizeIcon = Instance.new("TextLabel", Main)
     ResizeIcon.Name = "ResizeIcon"
@@ -204,6 +214,55 @@ function BMLibrary:CreateWindow(title)
 
         local Elements = {}
 
+        -- [NEW] CreateKeybind Function
+        function Elements:CreateKeybind(text, default, callback)
+            local binding = false
+            local currentKey = default or Enum.KeyCode.F
+            
+            local Container = Instance.new("Frame", Page)
+            Container.Size, Container.BackgroundTransparency = UDim2.new(1, -5, 0, 32), 1
+            
+            local Label = Instance.new("TextLabel", Container)
+            Label.Size = UDim2.new(0.4, 0, 1, 0)
+            Label.BackgroundTransparency = 1
+            Label.Text = text
+            Label.TextColor3 = Color3.new(1, 1, 1)
+            Label.Font, Label.TextSize, Label.TextXAlignment = Enum.Font.GothamSemibold, 13, Enum.TextXAlignment.Left
+
+            local BindBtn = Instance.new("TextButton", Container)
+            BindBtn.Size = UDim2.new(0.55, 0, 0, 28)
+            BindBtn.Position = UDim2.new(1, 0, 0.5, 0)
+            BindBtn.AnchorPoint = Vector2.new(1, 0.5)
+            BindBtn.BackgroundColor3 = ELEMENT_BG
+            BindBtn.Text = currentKey.Name
+            BindBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+            BindBtn.Font, BindBtn.TextSize = Enum.Font.GothamSemibold, 12
+            Instance.new("UICorner", BindBtn).CornerRadius = UDim.new(0, 4)
+
+            local Stroke = Instance.new("UIStroke", BindBtn)
+            Stroke.Thickness, Stroke.Color = 1, Color3.fromRGB(45, 45, 50)
+
+            BindBtn.MouseButton1Click:Connect(function()
+                if binding then return end
+                binding = true
+                BindBtn.Text = "..."
+                Stroke.Color = THEME_COLOR
+                
+                local connection
+                connection = UserInputService.InputBegan:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.Keyboard then
+                        currentKey = input.KeyCode
+                        BindBtn.Text = currentKey.Name
+                        Stroke.Color = Color3.fromRGB(45, 45, 50)
+                        binding = false
+                        if callback then callback(currentKey) end
+                        connection:Disconnect()
+                    end
+                end)
+            end)
+        end
+
+        -- [EXISTING ELEMENTS BELOW]
         function Elements:CreateLabel(text, align)
             local Label = Instance.new("TextLabel", Page)
             Label.Size = UDim2.new(1, -5, 0, 20)
