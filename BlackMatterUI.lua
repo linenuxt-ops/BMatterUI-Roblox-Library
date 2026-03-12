@@ -12,7 +12,18 @@ local STYLE = {
     Text = Color3.fromRGB(240, 240, 240)
 }
 
+-- Cleanup logic
+local function Cleanup()
+    for _, obj in ipairs(CoreGui:GetChildren()) do
+        if obj.Name == "BM_DevUI" then
+            obj:Destroy()
+        end
+    end
+end
+
 function BM_UI:Init(title)
+    Cleanup() -- Ensure no previous menu exists
+    
     local ScreenGui = Instance.new("ScreenGui", CoreGui)
     ScreenGui.Name = "BM_DevUI"
 
@@ -24,12 +35,17 @@ function BM_UI:Init(title)
     Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
     local drag = Instance.new("UIDragDetector", Main)
 
-    -- Window Toggle Logic
+    -- Window Toggle Logic with proper connection handling
     local HideKey = Enum.KeyCode.LeftControl
-    UserInputService.InputBegan:Connect(function(input, gpe)
+    local ToggleConn = UserInputService.InputBegan:Connect(function(input, gpe)
         if not gpe and input.KeyCode == HideKey then
             Main.Visible = not Main.Visible
         end
+    end)
+    
+    -- Ensure connection is destroyed when the UI is cleaned up
+    ScreenGui.AncestryChanged:Connect(function(_, parent)
+        if not parent then ToggleConn:Disconnect() end
     end)
 
     local UI = {}
@@ -38,15 +54,12 @@ function BM_UI:Init(title)
         HideKey = newKey
     end
 
-    -- Category/Page System
     function UI:CreateCategory(name)
-        -- In a real library, this would switch between ScrollingFrames
-        -- For now, it returns a table that creates components inside the Main frame
         local Category = {}
-        
         function Category:CreateKeybind(text, default, callback)
             local btn = Instance.new("TextButton", Main)
             btn.Size = UDim2.new(0, 380, 0, 35)
+            btn.Position = UDim2.new(0, 10, 0, 50) -- Adjusted for testing
             btn.Text = text .. ": " .. default.Name
             btn.BackgroundColor3 = STYLE.Surface
             btn.TextColor3 = STYLE.Text
