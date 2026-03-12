@@ -24,7 +24,7 @@ function BM_UI:Init(title)
 
     -- Main Window (Larger Size)
     local Main = Instance.new("Frame", ScreenGui)
-    Main.Size = UDim2.new(0, 600, 0, 400)
+    Main.Size = UDim2.new(0, 800, 0, 600)
     Main.Position = UDim2.new(0.5, 0, 0.5, 0)
     Main.AnchorPoint = Vector2.new(0.5, 0.5)
     Main.BackgroundColor3 = STYLE.Background
