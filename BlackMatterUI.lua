@@ -22,16 +22,16 @@ function BM_UI:Init(title)
     local ScreenGui = Instance.new("ScreenGui", CoreGui)
     ScreenGui.Name = "BM_DevUI"
 
-    -- Main Window (Larger Size)
+    -- Main Window
     local Main = Instance.new("Frame", ScreenGui)
-    Main.Size = UDim2.new(0, 850, 0, 700)
+    Main.Size = UDim2.new(0, 800, 0, 600)
     Main.Position = UDim2.new(0.5, 0, 0.5, 0)
     Main.AnchorPoint = Vector2.new(0.5, 0.5)
     Main.BackgroundColor3 = STYLE.Background
     Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
     local drag = Instance.new("UIDragDetector", Main)
 
-    -- Title Text
+    -- Title
     local TitleLabel = Instance.new("TextLabel", Main)
     TitleLabel.Size = UDim2.new(1, 0, 0, 40)
     TitleLabel.Text = "  " .. title
@@ -41,19 +41,32 @@ function BM_UI:Init(title)
     TitleLabel.BackgroundTransparency = 1
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- Sidebar (Adjusted position below title)
+    -- HORIZONTAL DIVIDER
+    local HLine = Instance.new("Frame", Main)
+    HLine.Size = UDim2.new(1, -20, 0, 1)
+    HLine.Position = UDim2.new(0, 10, 0, 40)
+    HLine.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
+    HLine.BorderSizePixel = 0
+
+    -- VERTICAL DIVIDER
+    local VLine = Instance.new("Frame", Main)
+    VLine.Size = UDim2.new(0, 1, 1, -80)
+    VLine.Position = UDim2.new(0, 150, 0, 60)
+    VLine.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
+    VLine.BorderSizePixel = 0
+
+    -- Sidebar
     local SideMenu = Instance.new("Frame", Main)
-    SideMenu.Size = UDim2.new(0, 130, 1, -40)
-    SideMenu.Position = UDim2.new(0, 0, 0, 40)
-    SideMenu.BackgroundColor3 = STYLE.Surface
-    Instance.new("UICorner", SideMenu).CornerRadius = UDim.new(0, 8)
+    SideMenu.Size = UDim2.new(0, 130, 1, -70)
+    SideMenu.Position = UDim2.new(0, 10, 0, 60)
+    SideMenu.BackgroundTransparency = 1
     local SideLayout = Instance.new("UIListLayout", SideMenu)
     SideLayout.Padding = UDim.new(0, 5)
 
-    -- Container for Pages (Adjusted position below title)
+    -- Content Area
     local ContentArea = Instance.new("Frame", Main)
-    ContentArea.Size = UDim2.new(1, -140, 1, -50)
-    ContentArea.Position = UDim2.new(0, 135, 0, 45)
+    ContentArea.Size = UDim2.new(1, -170, 1, -70)
+    ContentArea.Position = UDim2.new(0, 160, 0, 60)
     ContentArea.BackgroundTransparency = 1
 
     local UI = {}
