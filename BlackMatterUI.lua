@@ -7,253 +7,95 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Mouse = game:GetService("Players").LocalPlayer:GetMouse()
 
--- Theme Colors
-local THEME_COLOR = Color3.fromRGB(180, 50, 255) 
-local TOGGLE_OFF = Color3.fromRGB(45, 45, 45)
-local SLIDER_BG = Color3.fromRGB(45, 45, 45)
-local ELEMENT_BG = Color3.fromRGB(30, 30, 35)
+local ActiveConnections = {}
+local function RegisterConnection(conn)
+    table.insert(ActiveConnections, conn)
+    return conn
+end
 
--- Standard Cursor Assets
-local CURSOR_DRAG = "rbxassetid://163023520" 
-local CURSOR_RESIZE = "rbxassetid://13404403816"
-
-local UI_Visible = true
-local HideKey = Enum.KeyCode.LeftControl
-local ActiveLibraryConnection = nil
-
--- Improved ForceCleanup to prevent overlap issues
 local function ForceCleanup()
-    -- 1. Disconnect old input listeners so the "ghost" doesn't respond to keys
-    if ActiveLibraryConnection then
-        ActiveLibraryConnection:Disconnect()
-        ActiveLibraryConnection = nil
+    for _, conn in ipairs(ActiveConnections) do
+        if conn then pcall(function() conn:Disconnect() end) end
     end
-
-    -- 2. "Nuclear" wipe of the specific UI
+    table.clear(ActiveConnections)
     for _, child in ipairs(CoreGui:GetChildren()) do
-        if child.Name == "BMLibrary_Root" then
-            child:Destroy()
-        end
+        if child.Name == "BMLibrary_Root" then child:Destroy() end
     end
 end
 
 function BMLibrary:CreateWindow(title)
-    -- Ensure old menus are fully purged
     ForceCleanup()
-    task.wait(0.1) -- Small delay to allow Roblox to clear the hierarchy
+    task.wait(0.2)
 
-    local ScreenGui = Instance.new("ScreenGui")
+    local ScreenGui = Instance.new("ScreenGui", CoreGui)
     ScreenGui.Name = "BMLibrary_Root"
-    ScreenGui.Parent = CoreGui
-    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    ScreenGui:SetAttribute("BMLib_Version", self.Version)
-
-    ActiveLibraryConnection = UserInputService.InputBegan:Connect(function(input, gpe)
-        if gpe then return end
-        if input.KeyCode == HideKey then 
-            UI_Visible = not UI_Visible
-            -- Safely toggle only if the object still exists
-            if ScreenGui:FindFirstChild("Main") then
-                ScreenGui.Main.Visible = UI_Visible
-            end
-        end
-    end)
-
-    -- Main Window
+    
     local Main = Instance.new("CanvasGroup", ScreenGui)
     Main.Name = "Main"
     Main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-    Main.BorderSizePixel = 0
-    Main.AnchorPoint = Vector2.new(0.5, 0.5)
+    Main.Size = UDim2.new(0, 450, 0, 300)
     Main.Position = UDim2.new(0.5, 0, 0.5, 0)
-    Main.Size = UDim2.new(0, 0, 0, 0)
-    Main.GroupTransparency = 1
+    Main.AnchorPoint = Vector2.new(0.5, 0.5)
     Main.Active = true
     Main.ClipsDescendants = true
 
-    -- Global Visibility Toggle
-    local ToggleConn
-    ToggleConn = UserInputService.InputBegan:Connect(function(input, gpe)
-        if gpe then return end
-        -- Check if UI still exists to avoid memory leaks
-        if not ScreenGui or not ScreenGui.Parent then
-            ToggleConn:Disconnect()
-            return
-        end
-        
-        if input.KeyCode == HideKey then 
-            UI_Visible = not UI_Visible
-            Main.Visible = UI_Visible
-        end
-    end)
-
-    -- Resize Icon
-    local ResizeIcon = Instance.new("TextLabel", Main)
-    ResizeIcon.Name = "ResizeIcon"
-    ResizeIcon.BackgroundTransparency = 1
-    ResizeIcon.Position = UDim2.new(1, -15, 1, -15)
-    ResizeIcon.Size = UDim2.new(0, 15, 0, 15)
-    ResizeIcon.Font = Enum.Font.GothamBold
-    ResizeIcon.Text = "◢" 
-    ResizeIcon.TextColor3 = Color3.fromRGB(80, 40, 110)
-    ResizeIcon.TextSize = 16
-    ResizeIcon.ZIndex = 5
-
-    local ResizeHandle = Instance.new("TextButton", Main)
-    ResizeHandle.Name = "ResizeHandle"
-    ResizeHandle.Size = UDim2.new(0, 30, 0, 30)
-    ResizeHandle.Position = UDim2.new(1, -30, 1, -30)
-    ResizeHandle.BackgroundTransparency = 1
-    ResizeHandle.Text = ""
-    ResizeHandle.ZIndex = 100
-
-    -- Header
-    local TitleLabel = Instance.new("TextButton", Main)
-    TitleLabel.Name = "TitleHandle"
-    TitleLabel.BackgroundTransparency = 1
-    TitleLabel.Size = UDim2.new(1, 0, 0, 35)
-    TitleLabel.Font = Enum.Font.GothamBold
-    TitleLabel.Text = "    " .. (title or "BMLibrary")
-    TitleLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-    TitleLabel.TextSize = 14
-    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-    local HorizontalLine = Instance.new("Frame", Main)
-    HorizontalLine.Position = UDim2.new(0, 0, 0, 35)
-    HorizontalLine.Size = UDim2.new(1, 0, 0, 1)
-    HorizontalLine.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
-    HorizontalLine.BorderSizePixel = 0
-
-    local VerticalLine = Instance.new("Frame", Main)
-    VerticalLine.Position = UDim2.new(0, 120, 0, 36)
-    VerticalLine.Size = UDim2.new(0, 1, 1, -36)
-    VerticalLine.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
-    VerticalLine.BorderSizePixel = 0
-
-    -- Sidebar
     local Sidebar = Instance.new("ScrollingFrame", Main)
     Sidebar.Name = "Sidebar"
-    Sidebar.Position = UDim2.new(0, 5, 0, 40)
-    Sidebar.Size = UDim2.new(0, 110, 1, -45)
+    Sidebar.Size = UDim2.new(0, 120, 1, 0)
     Sidebar.BackgroundTransparency = 1
-    Sidebar.BorderSizePixel = 0
-    Sidebar.ScrollBarThickness = 0
+    Instance.new("UIListLayout", Sidebar).Padding = UDim.new(0, 5)
 
-    local SidebarLayout = Instance.new("UIListLayout", Sidebar)
-    SidebarLayout.Padding = UDim.new(0, 5)
-
-    -- Page Container
-    local PageFolder = Instance.new("Frame", Main)
+    local PageFolder = Instance.new("Folder", Main)
     PageFolder.Name = "Pages"
-    PageFolder.Position = UDim2.new(0, 130, 0, 45)
-    PageFolder.Size = UDim2.new(1, -140, 1, -55)
-    PageFolder.BackgroundTransparency = 1
 
-    -- Window Dragging & Resizing Logic
-    local draggingSize, dragging = false, false
-    local startPos, startSize, dragStart, startPosDrag
+    -- Basic Draggable Logic
+    local TitleLabel = Instance.new("TextButton", Main)
+    TitleLabel.Size = UDim2.new(1, 0, 0, 35)
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.Text = "  " .. (title or "BMLibrary")
+    TitleLabel.TextColor3 = Color3.new(1, 1, 1)
 
-    ResizeHandle.MouseEnter:Connect(function() Mouse.Icon = CURSOR_RESIZE ResizeIcon.TextColor3 = THEME_COLOR end)
-    ResizeHandle.MouseLeave:Connect(function() if not draggingSize then Mouse.Icon = "" ResizeIcon.TextColor3 = Color3.fromRGB(80, 40, 110) end end)
-
-    TitleLabel.InputBegan:Connect(function(input)
+    local dragging, dragStart, startPos
+    RegisterConnection(TitleLabel.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             dragStart = input.Position
-            startPosDrag = Main.Position
+            startPos = Main.Position
         end
-    end)
-
-    ResizeHandle.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            draggingSize = true
-            startPos = input.Position
-            startSize = Main.Size
-            startPosDrag = Main.Position
+    end))
+    RegisterConnection(UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
-            if draggingSize then
-                local delta = input.Position - startPos
-                local newSizeX = math.max(300, startSize.X.Offset + delta.X)
-                local newSizeY = math.max(250, startSize.Y.Offset + delta.Y)
-                Main.Size = UDim2.new(0, newSizeX, 0, newSizeY)
-                local offsetX = (newSizeX - startSize.X.Offset) / 2
-                local offsetY = (newSizeY - startSize.Y.Offset) / 2
-                Main.Position = UDim2.new(startPosDrag.X.Scale, startPosDrag.X.Offset + offsetX, startPosDrag.Y.Scale, startPosDrag.Y.Offset + offsetY)
-            elseif dragging then
-                local delta = input.Position - dragStart
-                Main.Position = UDim2.new(startPosDrag.X.Scale, startPosDrag.X.Offset + delta.X, startPosDrag.Y.Scale, startPosDrag.Y.Offset + delta.Y)
-            end
-        end
-    end)
-
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            draggingSize = false
-            dragging = false
-            Mouse.Icon = ""
-        end
-    end)
-
-    -- Intro Animation
-    TweenService:Create(Main, TweenInfo.new(0.6, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-        Size = UDim2.new(0, 450, 0, 300),
-        GroupTransparency = 0
-    }):Play()
+    end))
+    RegisterConnection(UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+    end))
 
     local Tabs = { ActivePage = nil }
-    
-    -- Public Utility Methods
-    function Tabs:SetHideKey(newKey)
-        HideKey = newKey
-    end
-
-    function Tabs:DestroyGui()
-        ScreenGui:Destroy()
-    end
 
     function Tabs:CreateCategory(name)
         local TabBtn = Instance.new("TextButton", Sidebar)
         TabBtn.Size = UDim2.new(1, -5, 0, 30)
-        TabBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-        TabBtn.Text, TabBtn.Font, TabBtn.TextSize = name, Enum.Font.GothamSemibold, 12
-        TabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-        TabBtn.BorderSizePixel = 0
-        Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 4)
-
+        TabBtn.Text = name
+        
         local Page = Instance.new("ScrollingFrame", PageFolder)
         Page.Name = name .. "_Page"
-        Page.Size = UDim2.new(1, 0, 1, 0)
-        Page.BackgroundTransparency, Page.BorderSizePixel = 1, 0
+        Page.Size = UDim2.new(1, -120, 1, 0)
+        Page.Position = UDim2.new(0, 120, 0, 0)
+        Page.BackgroundTransparency = 1
         Page.Visible = false
-        Page.ScrollBarThickness, Page.ScrollBarImageColor3 = 2, THEME_COLOR
+        Instance.new("UIListLayout", Page).Padding = UDim.new(0, 5)
 
-        local PageLayout = Instance.new("UIListLayout", Page)
-        PageLayout.Padding = UDim.new(0, 6)
-        PageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            Page.CanvasSize = UDim2.new(0, 0, 0, PageLayout.AbsoluteContentSize.Y + 20)
+        TabBtn.MouseButton1Click:Connect(function()
+            for _, p in pairs(PageFolder:GetChildren()) do p.Visible = false end
+            Page.Visible = true
         end)
 
-        local function Switch()
-            for _, p in pairs(PageFolder:GetChildren()) do p.Visible = false end
-            for _, b in pairs(Sidebar:GetChildren()) do 
-                if b:IsA("TextButton") then
-                    b.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-                    b.TextColor3 = Color3.fromRGB(150, 150, 150)
-                end
-            end
-            Page.Visible, TabBtn.BackgroundColor3, TabBtn.TextColor3 = true, Color3.fromRGB(40, 35, 50), Color3.new(1, 1, 1)
-        end
-
-        TabBtn.MouseButton1Click:Connect(Switch)
-        if Tabs.ActivePage == nil then Tabs.ActivePage = name Switch() end
-
         local Elements = {}
-
-        function Elements:CreateKeybind(text, default, callback)
+        
+       function Elements:CreateKeybind(text, default, callback)
             local binding = false
             local currentKey = default or Enum.KeyCode.F
             
