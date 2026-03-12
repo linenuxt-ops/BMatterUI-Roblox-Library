@@ -1,7 +1,6 @@
 local BM_UI = { Version = "1.0.0" }
 
 local CoreGui = game:GetService("CoreGui")
-local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 local STYLE = {
@@ -23,32 +22,43 @@ function BM_UI:Init(title)
     local ScreenGui = Instance.new("ScreenGui", CoreGui)
     ScreenGui.Name = "BM_DevUI"
 
+    -- Main Window (Larger Size)
     local Main = Instance.new("Frame", ScreenGui)
-    Main.Size = UDim2.new(0, 450, 0, 300)
+    Main.Size = UDim2.new(0, 600, 0, 400)
     Main.Position = UDim2.new(0.5, 0, 0.5, 0)
     Main.AnchorPoint = Vector2.new(0.5, 0.5)
     Main.BackgroundColor3 = STYLE.Background
     Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
     local drag = Instance.new("UIDragDetector", Main)
 
-    -- Sidebar for Categories
+    -- Title Text
+    local TitleLabel = Instance.new("TextLabel", Main)
+    TitleLabel.Size = UDim2.new(1, 0, 0, 40)
+    TitleLabel.Text = "  " .. title
+    TitleLabel.TextColor3 = STYLE.Text
+    TitleLabel.Font = Enum.Font.GothamBold
+    TitleLabel.TextSize = 18
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    -- Sidebar (Adjusted position below title)
     local SideMenu = Instance.new("Frame", Main)
-    SideMenu.Size = UDim2.new(0, 100, 1, 0)
+    SideMenu.Size = UDim2.new(0, 130, 1, -40)
+    SideMenu.Position = UDim2.new(0, 0, 0, 40)
     SideMenu.BackgroundColor3 = STYLE.Surface
     Instance.new("UICorner", SideMenu).CornerRadius = UDim.new(0, 8)
     local SideLayout = Instance.new("UIListLayout", SideMenu)
     SideLayout.Padding = UDim.new(0, 5)
 
-    -- Container for Pages
+    -- Container for Pages (Adjusted position below title)
     local ContentArea = Instance.new("Frame", Main)
-    ContentArea.Size = UDim2.new(1, -110, 1, -10)
-    ContentArea.Position = UDim2.new(0, 105, 0, 5)
+    ContentArea.Size = UDim2.new(1, -140, 1, -50)
+    ContentArea.Position = UDim2.new(0, 135, 0, 45)
     ContentArea.BackgroundTransparency = 1
 
     local UI = {}
     local HideKey = Enum.KeyCode.LeftControl
     
-    -- Toggle logic
     UserInputService.InputBegan:Connect(function(input, gpe)
         if not gpe and input.KeyCode == HideKey then Main.Visible = not Main.Visible end
     end)
@@ -56,15 +66,13 @@ function BM_UI:Init(title)
     function UI:SetHideKey(newKey) HideKey = newKey end
 
     function UI:CreateCategory(name)
-        -- Create Tab Button
         local btn = Instance.new("TextButton", SideMenu)
-        btn.Size = UDim2.new(1, 0, 0, 30)
+        btn.Size = UDim2.new(1, 0, 0, 35)
         btn.Text = name
         btn.BackgroundColor3 = STYLE.Primary
         btn.TextColor3 = STYLE.Text
         Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
 
-        -- Create Page
         local Page = Instance.new("ScrollingFrame", ContentArea)
         Page.Size = UDim2.new(1, 0, 1, 0)
         Page.BackgroundTransparency = 1
