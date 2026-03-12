@@ -42,7 +42,7 @@ function BMLibrary:CreateWindow(title)
     local Main = Instance.new("CanvasGroup", ScreenGui)
     Main.Name = "Main"
     Main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-    Main.Size = UDim2.new(0, 450, 0, 300)
+    Main.Size = UDim2.new(0, 650, 0, 500)
     Main.Position = UDim2.new(0.5, 0, 0.5, 0)
     Main.AnchorPoint = Vector2.new(0.5, 0.5)
     Main.Active = true
