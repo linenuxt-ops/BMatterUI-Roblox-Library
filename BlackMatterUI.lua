@@ -19,13 +19,19 @@ local CURSOR_RESIZE = "rbxassetid://13404403816"
 
 local UI_Visible = true
 local HideKey = Enum.KeyCode.LeftControl
+local ActiveLibraryConnection = nil
 
 -- Improved ForceCleanup to prevent overlap issues
 local function ForceCleanup()
+    -- 1. Disconnect old input listeners so the "ghost" doesn't respond to keys
+    if ActiveLibraryConnection then
+        ActiveLibraryConnection:Disconnect()
+        ActiveLibraryConnection = nil
+    end
+
+    -- 2. "Nuclear" wipe of the specific UI
     for _, child in ipairs(CoreGui:GetChildren()) do
-        if child.Name == "BMLibrary_Root" or child:GetAttribute("BMLib_Version") then
-            -- Immediately rename to prevent the next script from seeing it
-            child.Name = "BMLibrary_Cleanup_Queue" 
+        if child.Name == "BMLibrary_Root" then
             child:Destroy()
         end
     end
@@ -41,6 +47,17 @@ function BMLibrary:CreateWindow(title)
     ScreenGui.Parent = CoreGui
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     ScreenGui:SetAttribute("BMLib_Version", self.Version)
+
+    ActiveLibraryConnection = UserInputService.InputBegan:Connect(function(input, gpe)
+        if gpe then return end
+        if input.KeyCode == HideKey then 
+            UI_Visible = not UI_Visible
+            -- Safely toggle only if the object still exists
+            if ScreenGui:FindFirstChild("Main") then
+                ScreenGui.Main.Visible = UI_Visible
+            end
+        end
+    end)
 
     -- Main Window
     local Main = Instance.new("CanvasGroup", ScreenGui)
