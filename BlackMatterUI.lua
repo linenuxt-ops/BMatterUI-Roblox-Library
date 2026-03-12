@@ -20,17 +20,21 @@ local CURSOR_RESIZE = "rbxassetid://13404403816"
 local UI_Visible = true
 local HideKey = Enum.KeyCode.LeftControl
 
+-- Improved ForceCleanup to prevent overlap issues
 local function ForceCleanup()
     for _, child in ipairs(CoreGui:GetChildren()) do
         if child.Name == "BMLibrary_Root" or child:GetAttribute("BMLib_Version") then
+            -- Immediately rename to prevent the next script from seeing it
+            child.Name = "BMLibrary_Cleanup_Queue" 
             child:Destroy()
         end
     end
 end
 
 function BMLibrary:CreateWindow(title)
+    -- Ensure old menus are fully purged
     ForceCleanup()
-    task.wait(0.05)
+    task.wait(0.1) -- Small delay to allow Roblox to clear the hierarchy
 
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "BMLibrary_Root"
@@ -51,8 +55,15 @@ function BMLibrary:CreateWindow(title)
     Main.ClipsDescendants = true
 
     -- Global Visibility Toggle
-    UserInputService.InputBegan:Connect(function(input, gpe)
+    local ToggleConn
+    ToggleConn = UserInputService.InputBegan:Connect(function(input, gpe)
         if gpe then return end
+        -- Check if UI still exists to avoid memory leaks
+        if not ScreenGui or not ScreenGui.Parent then
+            ToggleConn:Disconnect()
+            return
+        end
+        
         if input.KeyCode == HideKey then 
             UI_Visible = not UI_Visible
             Main.Visible = UI_Visible
@@ -178,9 +189,13 @@ function BMLibrary:CreateWindow(title)
 
     local Tabs = { ActivePage = nil }
     
-    -- New: SetHideKey function
+    -- Public Utility Methods
     function Tabs:SetHideKey(newKey)
         HideKey = newKey
+    end
+
+    function Tabs:DestroyGui()
+        ScreenGui:Destroy()
     end
 
     function Tabs:CreateCategory(name)
