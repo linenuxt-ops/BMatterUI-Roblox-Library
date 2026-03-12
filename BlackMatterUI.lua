@@ -57,7 +57,7 @@ function BM_UI:Init(title)
     ContentArea.BackgroundTransparency = 1
 
     local UI = {}
-    local HideKey = Enum.KeyCode.LeftControl
+    local HideKey = Enum.KeyCode.RightControl
     
     UserInputService.InputBegan:Connect(function(input, gpe)
         if not gpe and input.KeyCode == HideKey then Main.Visible = not Main.Visible end
