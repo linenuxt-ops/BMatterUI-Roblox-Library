@@ -1,6 +1,5 @@
 local BM_UI = { Version = "1.0.0" }
 
--- Services
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -12,65 +11,83 @@ local STYLE = {
     Text = Color3.fromRGB(240, 240, 240)
 }
 
--- Cleanup logic
 local function Cleanup()
     for _, obj in ipairs(CoreGui:GetChildren()) do
-        if obj.Name == "BM_DevUI" then
-            obj:Destroy()
-        end
+        if obj.Name == "BM_DevUI" then obj:Destroy() end
     end
 end
 
 function BM_UI:Init(title)
-    Cleanup() -- Ensure no previous menu exists
+    Cleanup()
     
     local ScreenGui = Instance.new("ScreenGui", CoreGui)
     ScreenGui.Name = "BM_DevUI"
 
     local Main = Instance.new("Frame", ScreenGui)
-    Main.Size = UDim2.new(0, 400, 0, 300)
+    Main.Size = UDim2.new(0, 450, 0, 300)
     Main.Position = UDim2.new(0.5, 0, 0.5, 0)
     Main.AnchorPoint = Vector2.new(0.5, 0.5)
     Main.BackgroundColor3 = STYLE.Background
     Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
     local drag = Instance.new("UIDragDetector", Main)
 
-    -- Window Toggle Logic with proper connection handling
-    local HideKey = Enum.KeyCode.LeftControl
-    local ToggleConn = UserInputService.InputBegan:Connect(function(input, gpe)
-        if not gpe and input.KeyCode == HideKey then
-            Main.Visible = not Main.Visible
-        end
-    end)
-    
-    -- Ensure connection is destroyed when the UI is cleaned up
-    ScreenGui.AncestryChanged:Connect(function(_, parent)
-        if not parent then ToggleConn:Disconnect() end
-    end)
+    -- Sidebar for Categories
+    local SideMenu = Instance.new("Frame", Main)
+    SideMenu.Size = UDim2.new(0, 100, 1, 0)
+    SideMenu.BackgroundColor3 = STYLE.Surface
+    Instance.new("UICorner", SideMenu).CornerRadius = UDim.new(0, 8)
+    local SideLayout = Instance.new("UIListLayout", SideMenu)
+    SideLayout.Padding = UDim.new(0, 5)
+
+    -- Container for Pages
+    local ContentArea = Instance.new("Frame", Main)
+    ContentArea.Size = UDim2.new(1, -110, 1, -10)
+    ContentArea.Position = UDim2.new(0, 105, 0, 5)
+    ContentArea.BackgroundTransparency = 1
 
     local UI = {}
+    local HideKey = Enum.KeyCode.LeftControl
     
-    function UI:SetHideKey(newKey)
-        HideKey = newKey
-    end
+    -- Toggle logic
+    UserInputService.InputBegan:Connect(function(input, gpe)
+        if not gpe and input.KeyCode == HideKey then Main.Visible = not Main.Visible end
+    end)
+
+    function UI:SetHideKey(newKey) HideKey = newKey end
 
     function UI:CreateCategory(name)
+        -- Create Tab Button
+        local btn = Instance.new("TextButton", SideMenu)
+        btn.Size = UDim2.new(1, 0, 0, 30)
+        btn.Text = name
+        btn.BackgroundColor3 = STYLE.Primary
+        btn.TextColor3 = STYLE.Text
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+
+        -- Create Page
+        local Page = Instance.new("ScrollingFrame", ContentArea)
+        Page.Size = UDim2.new(1, 0, 1, 0)
+        Page.BackgroundTransparency = 1
+        Page.Visible = false
+        Instance.new("UIListLayout", Page).Padding = UDim.new(0, 5)
+
+        btn.MouseButton1Click:Connect(function()
+            for _, p in pairs(ContentArea:GetChildren()) do if p:IsA("ScrollingFrame") then p.Visible = false end end
+            Page.Visible = true
+        end)
+
         local Category = {}
         function Category:CreateKeybind(text, default, callback)
-            local btn = Instance.new("TextButton", Main)
-            btn.Size = UDim2.new(0, 380, 0, 35)
-            btn.Position = UDim2.new(0, 10, 0, 50) -- Adjusted for testing
-            btn.Text = text .. ": " .. default.Name
-            btn.BackgroundColor3 = STYLE.Surface
-            btn.TextColor3 = STYLE.Text
-            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
-            
-            btn.MouseButton1Click:Connect(function()
-                btn.Text = "Press a key..."
-                local conn
-                conn = UserInputService.InputBegan:Connect(function(input)
+            local kbtn = Instance.new("TextButton", Page)
+            kbtn.Size = UDim2.new(1, 0, 0, 35)
+            kbtn.Text = text .. ": " .. default.Name
+            kbtn.BackgroundColor3 = STYLE.Surface
+            kbtn.TextColor3 = STYLE.Text
+            kbtn.MouseButton1Click:Connect(function()
+                kbtn.Text = "Press a key..."
+                local conn; conn = UserInputService.InputBegan:Connect(function(input)
                     if input.UserInputType == Enum.UserInputType.Keyboard then
-                        btn.Text = text .. ": " .. input.KeyCode.Name
+                        kbtn.Text = text .. ": " .. input.KeyCode.Name
                         callback(input.KeyCode)
                         conn:Disconnect()
                     end
@@ -78,40 +95,6 @@ function BM_UI:Init(title)
             end)
         end
         return Category
-    end
-
-    function UI:CreateButton(text, callback)
-        local btn = Instance.new("TextButton", Main)
-        btn.Size = UDim2.new(0, 380, 0, 35)
-        btn.BackgroundColor3 = STYLE.Surface
-        btn.Text = text
-        btn.TextColor3 = STYLE.Text
-        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
-        btn.MouseButton1Click:Connect(callback or function() end)
-    end
-
-    function UI:ShowDialog(title, message, autoclose)
-        local Overlay = Instance.new("Frame", ScreenGui)
-        Overlay.Size = UDim2.new(1, 0, 1, 0)
-        Overlay.BackgroundColor3 = Color3.new(0, 0, 0)
-        Overlay.BackgroundTransparency = 0.3
-        
-        local Box = Instance.new("Frame", Overlay)
-        Box.Size = UDim2.new(0, 250, 0, 120)
-        Box.Position = UDim2.new(0.5, 0, 0.5, 0)
-        Box.AnchorPoint = Vector2.new(0.5, 0.5)
-        Box.BackgroundColor3 = STYLE.Background
-        
-        local Txt = Instance.new("TextLabel", Box)
-        Txt.Size = UDim2.new(1, 0, 1, 0)
-        Txt.Text = title .. "\n" .. message
-        Txt.TextColor3 = STYLE.Text
-        Txt.BackgroundTransparency = 1
-
-        if autoclose then
-            task.wait(2)
-            Overlay:Destroy()
-        end
     end
 
     return UI
