@@ -2,12 +2,20 @@ local BMLibrary = {
     Version = 3.5
 }
 
+-- Theme Configuration
+local THEME_COLOR = Color3.fromRGB(80, 120, 255) -- Main Accent Color
+local ELEMENT_BG = Color3.fromRGB(25, 25, 30)   -- Element Background
+local TOGGLE_OFF = Color3.fromRGB(45, 45, 50)   -- Toggle Off State
+local SLIDER_BG = Color3.fromRGB(35, 35, 40)    -- Slider Background
+
+-- Services
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Mouse = game:GetService("Players").LocalPlayer:GetMouse()
 
 local ActiveConnections = {}
+
 local function RegisterConnection(conn)
     table.insert(ActiveConnections, conn)
     return conn
@@ -29,6 +37,7 @@ function BMLibrary:CreateWindow(title)
 
     local ScreenGui = Instance.new("ScreenGui", CoreGui)
     ScreenGui.Name = "BMLibrary_Root"
+    ScreenGui.ResetOnSpawn = false
     
     local Main = Instance.new("CanvasGroup", ScreenGui)
     Main.Name = "Main"
@@ -41,19 +50,26 @@ function BMLibrary:CreateWindow(title)
 
     local Sidebar = Instance.new("ScrollingFrame", Main)
     Sidebar.Name = "Sidebar"
-    Sidebar.Size = UDim2.new(0, 120, 1, 0)
+    Sidebar.Size = UDim2.new(0, 120, 1, -35)
+    Sidebar.Position = UDim2.new(0, 0, 0, 35)
     Sidebar.BackgroundTransparency = 1
-    Instance.new("UIListLayout", Sidebar).Padding = UDim.new(0, 5)
+    Sidebar.ScrollBarThickness = 2
+    local SidebarLayout = Instance.new("UIListLayout", Sidebar)
+    SidebarLayout.Padding = UDim.new(0, 5)
 
     local PageFolder = Instance.new("Folder", Main)
     PageFolder.Name = "Pages"
 
-    -- Basic Draggable Logic
+    -- Title Bar / Draggable Logic
     local TitleLabel = Instance.new("TextButton", Main)
     TitleLabel.Size = UDim2.new(1, 0, 0, 35)
-    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+    TitleLabel.BorderSizePixel = 0
     TitleLabel.Text = "  " .. (title or "BMLibrary")
     TitleLabel.TextColor3 = Color3.new(1, 1, 1)
+    TitleLabel.Font = Enum.Font.GothamBold
+    TitleLabel.TextSize = 14
+    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
     local dragging, dragStart, startPos
     RegisterConnection(TitleLabel.InputBegan:Connect(function(input)
@@ -77,16 +93,23 @@ function BMLibrary:CreateWindow(title)
 
     function Tabs:CreateCategory(name)
         local TabBtn = Instance.new("TextButton", Sidebar)
-        TabBtn.Size = UDim2.new(1, -5, 0, 30)
+        TabBtn.Size = UDim2.new(1, -10, 0, 30)
+        TabBtn.BackgroundColor3 = ELEMENT_BG
         TabBtn.Text = name
+        TabBtn.TextColor3 = Color3.new(1, 1, 1)
+        TabBtn.Font = Enum.Font.GothamSemibold
+        TabBtn.TextSize = 12
+        Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 4)
         
         local Page = Instance.new("ScrollingFrame", PageFolder)
         Page.Name = name .. "_Page"
-        Page.Size = UDim2.new(1, -120, 1, 0)
-        Page.Position = UDim2.new(0, 120, 0, 0)
+        Page.Size = UDim2.new(1, -130, 1, -45)
+        Page.Position = UDim2.new(0, 125, 0, 40)
         Page.BackgroundTransparency = 1
         Page.Visible = false
-        Instance.new("UIListLayout", Page).Padding = UDim.new(0, 5)
+        Page.ScrollBarThickness = 2
+        local PageLayout = Instance.new("UIListLayout", Page)
+        PageLayout.Padding = UDim.new(0, 8)
 
         TabBtn.MouseButton1Click:Connect(function()
             for _, p in pairs(PageFolder:GetChildren()) do p.Visible = false end
@@ -95,7 +118,7 @@ function BMLibrary:CreateWindow(title)
 
         local Elements = {}
         
-       function Elements:CreateKeybind(text, default, callback)
+        function Elements:CreateKeybind(text, default, callback)
             local binding = false
             local currentKey = default or Enum.KeyCode.F
             
@@ -370,7 +393,6 @@ function BMLibrary:CreateWindow(title)
             local BoxStroke = Instance.new("UIStroke", ColorBox)
             BoxStroke.Thickness, BoxStroke.Color = 1.5, Color3.new(1,1,1)
 
-            -- Popup (Parented to Main window for layering)
             local Popup = Instance.new("Frame", Main)
             Popup.Name = "ColorPopup"
             Popup.Size, Popup.Visible, Popup.BackgroundColor3, Popup.Active, Popup.ZIndex = UDim2.new(0, 260, 0, 170), false, Color3.fromRGB(25, 25, 30), true, 500
@@ -465,23 +487,6 @@ function BMLibrary:CreateWindow(title)
                     Popup.Visible = true
                 else
                     Popup.Visible = false
-                end
-            end)
-
-            UserInputService.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 and Popup.Visible then
-                    local mPos = UserInputService:GetMouseLocation()
-                    local pPos, pSize = Popup.AbsolutePosition, Popup.AbsoluteSize
-                    -- Offset for Topbar height (36px)
-                    local adjustedY = mPos.Y - 36
-                    
-                    local inPopup = (mPos.X >= pPos.X and mPos.X <= pPos.X + pSize.X and adjustedY >= pPos.Y and adjustedY <= pPos.Y + pSize.Y)
-                    local bPos, bSize = ColorBox.AbsolutePosition, ColorBox.AbsoluteSize
-                    local inButton = (mPos.X >= bPos.X and mPos.X <= bPos.X + bSize.X and adjustedY >= bPos.Y and adjustedY <= bPos.Y + bSize.Y)
-                    
-                    if not inPopup and not inButton then
-                        Popup.Visible = false
-                    end
                 end
             end)
 
