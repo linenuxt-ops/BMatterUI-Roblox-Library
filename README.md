@@ -6,8 +6,8 @@
 task.wait(0.1)
 
 -- Load the library
-local success, BM_UI = pcall(function() 
-    return loadstring(readfile("ui.lua"))() 
+local success, BM_UI = pcall(function()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/linenuxt-ops/BMatterUI-Roblox-Library/refs/heads/main/BlackMatterUI.lua"))()
 end)
 
 if not success or not BM_UI then 
