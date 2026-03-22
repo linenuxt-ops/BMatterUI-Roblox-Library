@@ -3,42 +3,70 @@
 ## How to Use
 
 ```lua
-local BlackMatterUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/linenuxt-ops/BMatterUI-Roblox-Library/refs/heads/main/BlackMatterUI.lua"))()
-local Window = BlackMatterUI:CreateWindow("BLACK MATTER")
+task.wait(0.1)
 
-local GeneralTab = Window:CreateCategory("General")
-
-GeneralTab:CreateButton("Click Me", function()
-    print("The button was clicked!")
+-- Load the library
+local success, BM_UI = pcall(function() 
+    return loadstring(readfile("ui.lua"))() 
 end)
 
-GeneralTab:CreateColorPicker("Accent Color", Color3.fromRGB(180, 50, 255), function(newColor)
-    print("Color changed to: " .. tostring(newColor))
+if not success or not BM_UI then 
+    warn("BM_UI: Failed to load ui.lua. Make sure the file exists!") 
+    return 
+end
+
+-- Initialize the Menu
+local menu = BM_UI:Init("BLACK MATTER")
+
+-- 1. Create Categories
+local combatTab = menu:CreateCategory("Combat")
+local visualTab = menu:CreateCategory("Visuals")
+local miscTab   = menu:CreateCategory("Misc")
+
+-- 2. Create Cards
+local combatCard = combatTab:CreateCard("Main Features", "Left")
+local serverCard = combatTab:CreateCard("Server Utils", "Right")
+local espCard    = visualTab:CreateCard("ESP Settings", "Left")
+local worldCard  = visualTab:CreateCard("World Visuals", "Right")
+local playerCard = miscTab:CreateCard("Player Actions", "Left")
+
+-- 3. Add Elements
+combatCard:AddToggle("Auto Execute", "auto_exec", false, function(val)
+    print("Auto Exec status:", val)
 end)
 
-GeneralTab:CreateButton("Check for Updates", function()
-    Window:ShowCriticalUpdate() 
+-- Use the new BUILT-IN utility buttons for Server Hopping
+serverCard:AddSmallServerButton() 
+serverCard:AddServerHopButton()
+
+worldCard:AddSlider("Speed", "world_speed", 0, 100, 50, function(val) 
+    print("Speed set to:", val)
 end)
 
-GeneralTab:CreateToggle("Enable Feature", false, function(state)
-    print("Toggle is now: ", state)
+espCard:AddToggle("Enable ESP", "esp_toggle", false, function(state)
+    print("ESP Status:", state)
 end)
 
-GeneralTab:CreateSlider("Walkspeed", 16, 100, 16, function(value)
-    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = value
+playerCard:AddButton("Reset Character", function()
+    local char = game.Players.LocalPlayer.Character
+    if char then char:BreakJoints() end
 end)
 
-GeneralTab:CreateInput("User Note", "Type here...", function(text)
-    print("User entered text: " .. text)
-end)
+-- 4. Testing Dropdowns & Built-in Anti-AFK
+local extraDrop = miscTab:CreateDropdown("Extra Settings", "Right")
 
-GeneralTab:CreateCheckbox("Anti-AFK", true, function(state)
-    if state then
-        print("Anti-AFK is now ON")
-    else
-        print("Anti-AFK is now OFF")
+-- Use the new BUILT-IN utility toggle for Anti-AFK
+extraDrop:AddAntiAFKToggle("anti_afk_flag")
+
+extraDrop:AddButton("Save & Print Config", function()
+    BM_UI:SaveConfig("manual_save")
+    print("--- Current Flags ---")
+    for flag, value in pairs(BM_UI.Flags) do
+        print(tostring(flag) .. " -> " .. tostring(value))
     end
 end)
+
+print("BM_UI: Menu Fully Initialized!")
 ```
 ---
 
